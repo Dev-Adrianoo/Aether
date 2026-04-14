@@ -191,7 +191,6 @@ class ScreenshotManager:
 
     def should_capture_screenshot(self, transcribed_text=None):
         """Decide se deve capturar screenshot baseado em triggers ou intervalo"""
-        import time
         current_time = time.time()
 
         # Trigger por palavra-chave no texto transcrito

@@ -172,7 +172,7 @@ class VoiceListener:
         """Classifica o tipo de comando"""
         text_lower = text.lower()
 
-        if any(word in text_lower for word in ["tela", "print", "screenshot", "foto", "captura"]):
+        if any(word in text_lower for word in ["tela", "print", "screenshot", "foto", "captura", "mostra", "olha"]):
             return "screenshot"
         elif any(word in text_lower for word in ["para", "pare", "stop", "encerra"]):
             return "stop"
