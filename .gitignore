@@ -58,6 +58,7 @@ aether.log
 .env.development.local
 .env.test.local
 .env.production.local
+.openclaude/
 
 # Test outputs
 .coverage
