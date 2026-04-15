@@ -35,9 +35,9 @@ class AetherSensorySystem:
         try:
             # Importar módulos
             from src.vision.screenshot_manager import ScreenshotManager
-            from src.hearing.voice_listener_refactored import VoiceListener
-            from src.speech.tts_engine import TTSEngine
-            from src.integration.openclaude_client import OpenClaudeClient
+            from src.voice.voice_listener import VoiceListener
+            from src.voice.tts_engine import TTSEngine
+            from src.integrations.openclaude_client import OpenClaudeClient
             from src.brain.obsidian_manager import ObsidianManager
 
             # Inicializar módulos
