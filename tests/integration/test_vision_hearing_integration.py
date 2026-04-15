@@ -115,7 +115,7 @@ class TestVisionHearingIntegration:
         assert reason == "interval"
 
         # Cenário 3: Não deve capturar (sem trigger, intervalo não passou)
-        vision_manager.last_screenshot_time = time.time() - 30  # 30 segundos atrás
+        vision_manager.last_screenshot_time = time.time() - 1  # 1 segundo atrás (intervalo é 2)
         should_capture, reason = vision_manager.should_capture_screenshot("texto normal")
         assert should_capture is False
         assert reason is None

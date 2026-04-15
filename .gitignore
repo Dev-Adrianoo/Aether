@@ -65,3 +65,7 @@ aether.log
 htmlcov/
 .pytest_cache/
 .mypy_cache/
+
+config
+.claude
+docs

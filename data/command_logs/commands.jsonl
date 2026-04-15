@@ -1,0 +1,18 @@
+{"timestamp": "2026-04-13T22:42:00.238442", "command": "tá me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T22:52:17.275537", "command": "tá me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T22:55:30.452225", "command": "tá me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T22:56:42.639225", "command": "tá me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T22:56:57.921838", "command": "tá me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T22:57:33.064730", "command": "tá me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T22:58:16.238020", "command": "ajuda", "type": "help", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T22:58:39.966464", "command": "você consegue me responder", "type": "conversation", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T22:59:36.018535", "command": "ajuda", "type": "help", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T23:01:28.185024", "command": "a éder tá online", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T23:01:41.019023", "command": "tá aí", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T23:02:53.753988", "command": "tá aí éder tá aí", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T23:04:04.411035", "command": "o a éder", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T23:07:33.701682", "command": "ocê quiser aparecer você vai apertar o botão de pulo duas vezes o mais rápido possível aqui nós", "type": "stop", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-13T23:09:00.288279", "command": "ndária antes dele voltar a atacar seguindo todas essas dicas", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T19:56:21.373550", "command": "de parede", "type": "stop", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T19:56:28.114348", "command": "tá aí me responda", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T20:00:04.927771", "command": "está me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}

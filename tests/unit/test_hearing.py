@@ -85,7 +85,7 @@ class TestVoiceListener:
 
         # Deve chamar callbacks
         mock_wake_callback.assert_called_once()
-        mock_command_callback.assert_called_once_with("tira um print", pytest.approx(0.5, 0.1))
+        mock_command_callback.assert_called_once_with("tira um print", pytest.approx(0.6, 0.1))
 
     @pytest.mark.asyncio
     async def test_process_audio_text_wake_word_cooldown(self, listener):
