@@ -39,6 +39,7 @@ class AetherSensorySystem:
             from src.voice.tts_engine import TTSEngine
             from src.integrations.openclaude_client import OpenClaudeClient
             from src.brain.obsidian_manager import ObsidianManager
+            from config import config
 
             # Inicializar módulos
             self.modules['vision'] = ScreenshotManager()
@@ -50,7 +51,10 @@ class AetherSensorySystem:
             self.modules['speech'] = TTSEngine(use_edge_tts=use_edge_tts)
 
             self.modules['integration'] = OpenClaudeClient()
-            self.modules['brain'] = ObsidianManager()
+            self.modules['brain'] = ObsidianManager(
+                vault_path=str(config.obsidian.vault_path),
+                log_folder=config.obsidian.log_folder
+            )
 
             # Inicializar módulos assíncronos
             await self.modules['speech'].initialize()

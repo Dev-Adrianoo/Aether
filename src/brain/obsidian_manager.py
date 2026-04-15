@@ -15,10 +15,9 @@ logger = logging.getLogger(__name__)
 class ObsidianManager:
     """Gerenciador do vault do Obsidian para armazenamento de conhecimento"""
 
-    def __init__(self, vault_path: Optional[str] = None):
-        # Caminho padrão do vault do Obsidian
-        self.vault_path = Path(vault_path or "C:/Users/Adria/Documents/Obsidian Vault")
-        self.aether_dir = self.vault_path / "Aether"
+    def __init__(self, vault_path: str, log_folder: str = "Aether"):
+        self.vault_path = Path(vault_path)
+        self.aether_dir = self.vault_path / log_folder
         self.interactions_dir = self.aether_dir / "Interactions"
         self.screenshots_dir = self.aether_dir / "Screenshots"
         self.insights_dir = self.aether_dir / "Insights"
