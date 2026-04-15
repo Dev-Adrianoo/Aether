@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.hearing.voice_listener import VoiceListener
+from src.voice.voice_listener import VoiceListener
 
 
 class TestVoiceListener:
@@ -129,8 +129,8 @@ class TestVoiceListener:
         assert 0.5 <= args[1] <= 0.95  # Confiança dentro do esperado
 
     @pytest.mark.asyncio
-    @patch('src.hearing.voice_listener.sr.Recognizer')
-    @patch('src.hearing.voice_listener.sr.Microphone')
+    @patch('src.voice.voice_listener.sr.Recognizer')
+    @patch('src.voice.voice_listener.sr.Microphone')
     async def test_start_listening_basic(self, mock_mic, mock_recognizer, listener):
         """Testa início básico da escuta"""
         # Mocks
@@ -161,7 +161,7 @@ class TestVoiceListener:
         mock_rec.adjust_for_ambient_noise.assert_called_once_with(mock_source, duration=1)
 
     @pytest.mark.asyncio
-    @patch('src.hearing.voice_listener.sr.Recognizer')
+    @patch('src.voice.voice_listener.sr.Recognizer')
     async def test_recognize_speech_success(self, mock_recognizer, listener):
         """Testa reconhecimento de fala bem-sucedido"""
         # Setup
@@ -176,7 +176,7 @@ class TestVoiceListener:
         listener.recognizer.recognize_google.assert_called_once_with(mock_audio, language="pt-BR")
 
     @pytest.mark.asyncio
-    @patch('src.hearing.voice_listener.sr')
+    @patch('src.voice.voice_listener.sr')
     async def test_recognize_speech_unknown_value(self, mock_sr, listener):
         """Testa reconhecimento quando fala não é entendida"""
         listener.recognizer = Mock()
@@ -189,8 +189,8 @@ class TestVoiceListener:
         assert result is None
 
     @pytest.mark.asyncio
-    @patch('src.hearing.voice_listener.Path')
-    @patch('src.hearing.voice_listener.json')
+    @patch('src.voice.voice_listener.Path')
+    @patch('src.voice.voice_listener.json')
     async def test_log_command(self, mock_json, mock_path, listener):
         """Testa registro de comando no log"""
         # Mock do Path

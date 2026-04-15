@@ -55,7 +55,7 @@ async def test_hearing_basics():
     print("=" * 50)
 
     try:
-        from src.hearing.voice_listener import VoiceListener
+        from src.voice.voice_listener import VoiceListener
 
         listener = VoiceListener()
         print("✅ VoiceListener inicializado")
@@ -92,7 +92,7 @@ async def test_integration():
 
     try:
         from src.vision.screenshot_manager import ScreenshotManager
-        from src.hearing.voice_listener import VoiceListener
+        from src.voice.voice_listener import VoiceListener
 
         vision = ScreenshotManager()
         hearing = VoiceListener()

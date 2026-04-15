@@ -11,7 +11,7 @@ from pathlib import Path
 # Adicionar diretório raiz ao path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.speech.tts_engine import TTSEngine
+from src.voice.tts_engine import TTSEngine
 from config import config
 
 
@@ -49,7 +49,7 @@ class TestTTSEngine:
     async def test_initialize_edge_tts(self):
         """Testa inicialização com edge-tts"""
         # Mock edge_tts import dentro do método initialize
-        with patch('src.speech.tts_engine.edge_tts') as mock_edge_tts:
+        with patch('src.voice.tts_engine.edge_tts') as mock_edge_tts:
             tts = TTSEngine(use_edge_tts=True)
             success = await tts.initialize()
 
@@ -61,7 +61,7 @@ class TestTTSEngine:
     async def test_initialize_pyttsx3(self):
         """Testa inicialização com pyttsx3"""
         # Mock pyttsx3 import dentro do método initialize
-        with patch('src.speech.tts_engine.pyttsx3') as mock_pyttsx3:
+        with patch('src.voice.tts_engine.pyttsx3') as mock_pyttsx3:
             mock_engine = Mock()
             mock_pyttsx3.init.return_value = mock_engine
             mock_engine.getProperty.return_value = []
@@ -77,7 +77,7 @@ class TestTTSEngine:
     @pytest.mark.asyncio
     async def test_initialize_import_error(self):
         """Testa falha na inicialização por import error"""
-        with patch('src.speech.tts_engine.edge_tts', side_effect=ImportError("No module named 'edge_tts'")):
+        with patch('src.voice.tts_engine.edge_tts', side_effect=ImportError("No module named 'edge_tts'")):
             tts = TTSEngine(use_edge_tts=True)
             success = await tts.initialize()
 
@@ -87,7 +87,7 @@ class TestTTSEngine:
     async def test_speak_edge_tts(self):
         """Testa fala com edge-tts"""
         # Mock edge_tts import dentro do método speak
-        with patch('src.speech.tts_engine.edge_tts') as mock_edge_tts:
+        with patch('src.voice.tts_engine.edge_tts') as mock_edge_tts:
             mock_communicate = AsyncMock()
             mock_edge_tts.Communicate.return_value = mock_communicate
 

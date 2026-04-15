@@ -14,7 +14,7 @@ async def test_openclaude():
     print("🤖 Testando conexão OpenClaude...")
 
     try:
-        from src.integration.openclaude_client import OpenClaudeClient
+        from src.integrations.openclaude_client import OpenClaudeClient
 
         client = OpenClaudeClient()
 

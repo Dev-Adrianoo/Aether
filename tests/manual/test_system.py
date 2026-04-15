@@ -34,7 +34,7 @@ async def test_voice_system():
     print("\n🎤 Testando sistema de voz...")
 
     try:
-        from src.hearing.voice_listener_refactored import VoiceListener
+        from src.voice.voice_listener import VoiceListener
 
         listener = VoiceListener(config={'print_feedback': True})
 
@@ -57,7 +57,7 @@ async def test_tts():
     print("\n🗣️  Testando sistema de TTS...")
 
     try:
-        from src.speech.tts_engine import TTSEngine
+        from src.voice.tts_engine import TTSEngine
 
         tts = TTSEngine(use_edge_tts=False)
         await tts.initialize()

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Adicionar diretório raiz ao path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.speech.tts_engine import TTSEngine
+from src.voice.tts_engine import TTSEngine
 from config import config
 
 

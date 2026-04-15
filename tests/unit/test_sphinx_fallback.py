@@ -10,7 +10,7 @@ from pathlib import Path
 # Adicionar diretório raiz ao path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.hearing.voice_listener import VoiceListener
+from src.voice.voice_listener import VoiceListener
 
 
 class TestSphinxFallback:
@@ -24,8 +24,8 @@ class TestSphinxFallback:
     def test_check_sphinx_availability_available(self):
         """Testa verificação quando CMU Sphinx está disponível"""
         # Mock das importações dentro do método _check_sphinx_availability
-        with patch('src.hearing.voice_listener.sr') as mock_sr, \
-             patch('src.hearing.voice_listener.pocketsphinx'):
+        with patch('src.voice.voice_listener.sr') as mock_sr, \
+             patch('src.voice.voice_listener.pocketsphinx'):
 
             listener = VoiceListener()
             assert hasattr(listener, 'sphinx_available')
@@ -34,9 +34,9 @@ class TestSphinxFallback:
     def test_check_sphinx_availability_not_available(self):
         """Testa verificação quando CMU Sphinx não está disponível"""
         # Mock sr e simular ImportError para pocketsphinx
-        with patch('src.hearing.voice_listener.sr') as mock_sr:
+        with patch('src.voice.voice_listener.sr') as mock_sr:
             mock_sr.Recognizer.return_value = Mock()
-            with patch('src.hearing.voice_listener.pocketsphinx', side_effect=ImportError("No module named 'pocketsphinx'")):
+            with patch('src.voice.voice_listener.pocketsphinx', side_effect=ImportError("No module named 'pocketsphinx'")):
                 listener = VoiceListener()
                 assert hasattr(listener, 'sphinx_available')
                 # O valor será definido pelo método _check_sphinx_availability
