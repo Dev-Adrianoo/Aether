@@ -1,250 +1,214 @@
 """
-Testes unitários do módulo de audição (VoiceListener)
+Testes unitários do VoiceListener (src/voice/voice_listener.py)
 """
 
 import asyncio
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
-import time
+from unittest.mock import Mock, AsyncMock, MagicMock
 
-# Importar módulo a testar
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.voice.voice_listener import VoiceListener
+from src.voice.audio_capture import AudioCapture
+from src.voice.speech_recognizer import SpeechRecognizer
+from src.voice.command_processor import CommandProcessor
 
 
-class TestVoiceListener:
-    """Testes para VoiceListener"""
+def make_listener(**kwargs):
+    """Cria VoiceListener com dependências mockadas por padrão."""
+    return VoiceListener(
+        audio_capture=kwargs.get('audio_capture', Mock(spec=AudioCapture)),
+        speech_recognizer=kwargs.get('speech_recognizer', Mock(spec=SpeechRecognizer)),
+        command_processor=kwargs.get('command_processor', Mock(spec=CommandProcessor)),
+        config=kwargs.get('config', {'print_feedback': False})
+    )
 
-    @pytest.fixture
-    def listener(self):
-        """Fixture para criar listener limpo"""
-        return VoiceListener()
 
-    def test_initialization(self, listener):
-        """Testa inicialização do listener"""
-        assert listener.wake_word == "aether"
-        assert listener.listening_active is False
-        assert listener.energy_threshold == 4000
-        assert listener.pause_threshold == 0.8
-        assert listener.phrase_time_limit == 5
-        assert listener.on_command_detected is None
-        assert listener.on_wake_word_detected is None
-        assert listener.last_wake_word_time == 0
-        assert listener.wake_word_cooldown == 2
+class TestVoiceListenerInit:
 
-    def test_calculate_confidence(self, listener):
-        """Testa cálculo de confiança"""
-        # Comandos curtos têm confiança baixa
-        assert listener._calculate_confidence("oi") == 0.5
+    def test_injected_dependencies_stored(self):
+        audio = Mock(spec=AudioCapture)
+        recognizer = Mock(spec=SpeechRecognizer)
+        processor = Mock(spec=CommandProcessor)
+        listener = VoiceListener(
+            audio_capture=audio,
+            speech_recognizer=recognizer,
+            command_processor=processor,
+            config={'print_feedback': False}
+        )
+        assert listener.audio_capture is audio
+        assert listener.speech_recognizer is recognizer
+        assert listener.command_processor is processor
+        assert listener.running is False
 
-        # Comandos com palavras-chave aumentam confiança
-        confidence = listener._calculate_confidence("tira um print da tela")
-        assert 0.6 <= confidence <= 0.95  # Deve ter pelo menos +0.1 por "tela"
+    def test_print_feedback_default_true(self):
+        audio = Mock(spec=AudioCapture)
+        recognizer = Mock(spec=SpeechRecognizer)
+        processor = Mock(spec=CommandProcessor)
+        listener = VoiceListener(audio_capture=audio, speech_recognizer=recognizer, command_processor=processor)
+        assert listener._print is True
 
-        # Máximo 0.95
-        confidence = listener._calculate_confidence("tela print captura mostra olha foto")
-        assert confidence == 0.95  # Máximo
+    def test_print_feedback_disabled_via_config(self):
+        listener = make_listener()
+        assert listener._print is False
 
-    def test_classify_command(self, listener):
-        """Testa classificação de comandos"""
-        test_cases = [
-            ("tira um print da tela", "screenshot"),
-            ("captura a tela agora", "screenshot"),
-            ("tira uma foto disso", "screenshot"),
-            ("mostra como está", "screenshot"),
-            ("olha aqui", "screenshot"),
-            ("para tudo", "stop"),
-            ("pare agora", "stop"),
-            ("encerra o sistema", "stop"),
-            ("me ajuda", "help"),
-            ("quais comandos", "help"),
-            ("qual o status", "status"),
-            ("como tá", "status"),
-            ("comando desconhecido", "unknown"),
-            ("outra coisa qualquer", "unknown"),
-        ]
 
-        for text, expected in test_cases:
-            result = listener._classify_command(text)
-            assert result == expected, f"Falha em: '{text}' -> {result} (esperado: {expected})"
+class TestVoiceListenerStart:
 
     @pytest.mark.asyncio
-    async def test_process_audio_text_wake_word(self, listener):
-        """Testa processamento de texto com wake word"""
-        # Mock callbacks
-        mock_wake_callback = AsyncMock()
-        mock_command_callback = AsyncMock()
-        listener.on_wake_word_detected = mock_wake_callback
-        listener.on_command_detected = mock_command_callback
-
-        # Primeira ativação
-        await listener._process_audio_text("aether tira um print")
-
-        # Deve chamar callbacks
-        mock_wake_callback.assert_called_once()
-        mock_command_callback.assert_called_once_with("tira um print", pytest.approx(0.6, 0.1))
+    async def test_start_sets_running_true(self):
+        listener = make_listener()
+        listener.audio_capture.start_continuous_capture = AsyncMock()
+        await listener.start()
+        assert listener.running is True
 
     @pytest.mark.asyncio
-    async def test_process_audio_text_wake_word_cooldown(self, listener):
-        """Testa cooldown do wake word"""
-        listener.last_wake_word_time = time.time() - 1  # 1 segundo atrás (cooldown é 2)
-
-        # Mock callback
-        mock_callback = AsyncMock()
-        listener.on_wake_word_detected = mock_callback
-
-        # Não deve ativar (ainda em cooldown)
-        await listener._process_audio_text("aether teste")
-
-        mock_callback.assert_not_called()
+    async def test_start_calls_audio_capture(self):
+        listener = make_listener()
+        listener.audio_capture.start_continuous_capture = AsyncMock()
+        await listener.start()
+        listener.audio_capture.start_continuous_capture.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_process_audio_text_no_wake_word(self, listener):
-        """Testa texto sem wake word"""
-        # Mock callback
-        mock_callback = AsyncMock()
-        listener.on_command_detected = mock_callback
+    async def test_start_twice_ignores_second_call(self):
+        listener = make_listener()
+        listener.audio_capture.start_continuous_capture = AsyncMock()
+        await listener.start()
+        await listener.start()
+        listener.audio_capture.start_continuous_capture.assert_called_once()
 
-        # Texto sem wake word
-        await listener._process_audio_text("texto normal sem wake word")
 
-        # Não deve chamar callback (sem estado "acordado" ainda)
-        mock_callback.assert_not_called()
+class TestVoiceListenerStop:
 
     @pytest.mark.asyncio
-    async def test_process_command(self, listener):
-        """Testa processamento de comando"""
-        # Mock callback
-        mock_callback = AsyncMock()
-        listener.on_command_detected = mock_callback
-
-        await listener._process_command("tira um print da tela")
-
-        mock_callback.assert_called_once()
-        args = mock_callback.call_args[0]
-        assert args[0] == "tira um print da tela"
-        assert 0.5 <= args[1] <= 0.95  # Confiança dentro do esperado
+    async def test_stop_sets_running_false(self):
+        listener = make_listener()
+        listener.running = True
+        listener.audio_capture.stop = AsyncMock()
+        await listener.stop()
+        assert listener.running is False
 
     @pytest.mark.asyncio
-    @patch('src.voice.voice_listener.sr.Recognizer')
-    @patch('src.voice.voice_listener.sr.Microphone')
-    async def test_start_listening_basic(self, mock_mic, mock_recognizer, listener):
-        """Testa início básico da escuta"""
-        # Mocks
-        mock_source = Mock()
-        mock_mic.return_value.__enter__.return_value = mock_source
+    async def test_stop_calls_audio_capture_stop(self):
+        listener = make_listener()
+        listener.running = True
+        listener.audio_capture.stop = AsyncMock()
+        await listener.stop()
+        listener.audio_capture.stop.assert_called_once()
 
-        mock_rec = Mock()
-        mock_rec.energy_threshold = 4000
-        mock_rec.pause_threshold = 0.8
-        mock_rec.dynamic_energy_threshold = True
-        mock_recognizer.return_value = mock_rec
 
-        # Configurar para parar rápido
-        listener.listening_active = True
-
-        # Mock do listen para retornar rápido
-        mock_audio = Mock()
-        mock_rec.listen.return_value = mock_audio
-        mock_rec.recognize_google.return_value = "aether teste"
-
-        # Executar em background e parar rápido
-        task = asyncio.create_task(listener.start_listening())
-        await asyncio.sleep(0.1)
-        listener.listening_active = False
-        await task
-
-        # Verificar chamadas básicas
-        mock_rec.adjust_for_ambient_noise.assert_called_once_with(mock_source, duration=1)
+class TestProcessAudioCallback:
 
     @pytest.mark.asyncio
-    @patch('src.voice.voice_listener.sr.Recognizer')
-    async def test_recognize_speech_success(self, mock_recognizer, listener):
-        """Testa reconhecimento de fala bem-sucedido"""
-        # Setup
-        listener.recognizer = Mock()
-        listener.recognizer.recognize_google.return_value = "texto reconhecido"
+    async def test_recognized_text_sent_to_processor(self):
+        processor = Mock(spec=CommandProcessor)
+        processor.process_text = AsyncMock(return_value=False)
+        recognizer = Mock(spec=SpeechRecognizer)
+        recognizer.recognize = AsyncMock(return_value="aether captura tela")
 
-        mock_audio = Mock()
+        listener = make_listener(speech_recognizer=recognizer, command_processor=processor)
+        listener.running = True
 
-        result = await listener._recognize_speech(mock_audio)
+        await listener._process_audio_callback(b"fake_audio")
 
-        assert result == "texto reconhecido"
-        listener.recognizer.recognize_google.assert_called_once_with(mock_audio, language="pt-BR")
-
-    @pytest.mark.asyncio
-    async def test_recognize_speech_unknown_value(self, listener):
-        """Testa reconhecimento quando fala não é entendida"""
-        import speech_recognition as sr_real
-        listener.recognizer = Mock()
-        listener.recognizer.recognize_google.side_effect = sr_real.UnknownValueError
-
-        mock_audio = Mock()
-
-        result = await listener._recognize_speech(mock_audio)
-
-        assert result is None
+        recognizer.recognize.assert_called_once_with(b"fake_audio")
+        processor.process_text.assert_called_once_with("aether captura tela")
 
     @pytest.mark.asyncio
-    @patch('src.voice.voice_listener.Path')
-    async def test_log_command(self, mock_path, listener):
-        """Testa registro de comando no log"""
-        # Mock do Path usando MagicMock para suportar operador /
-        from unittest.mock import MagicMock
-        mock_log_dir = MagicMock()
-        mock_log_dir.mkdir.return_value = None
-        mock_log_file = MagicMock()
-        mock_log_dir.__truediv__.return_value = mock_log_file
+    async def test_none_text_skips_processor(self):
+        processor = Mock(spec=CommandProcessor)
+        processor.process_text = AsyncMock()
+        recognizer = Mock(spec=SpeechRecognizer)
+        recognizer.recognize = AsyncMock(return_value=None)
 
-        mock_path.return_value.parent = mock_log_dir
-        mock_path.return_value.__str__.return_value = "/fake/path/commands.jsonl"
+        listener = make_listener(speech_recognizer=recognizer, command_processor=processor)
+        listener.running = True
 
-        # Mock do open (MagicMock para suportar context manager __enter__/__exit__)
-        mock_file = MagicMock()
-        mock_file.__enter__.return_value = mock_file
+        await listener._process_audio_callback(b"silence")
 
-        with patch('builtins.open', return_value=mock_file):
-            await listener._log_command("teste", 0.8, "screenshot")
-
-            # Verificar que escreveu JSON
-            mock_file.write.assert_called_once()
-            call_args = mock_file.write.call_args[0][0]
-            assert '"command": "teste"' in call_args
-            assert '"confidence": 0.8' in call_args
-            assert '"type": "screenshot"' in call_args
+        processor.process_text.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_shutdown(self, listener):
-        """Testa encerramento do listener"""
-        listener.listening_active = True
-        await listener.shutdown()
-        assert listener.listening_active is False
+    async def test_not_running_skips_everything(self):
+        recognizer = Mock(spec=SpeechRecognizer)
+        recognizer.recognize = AsyncMock()
+
+        listener = make_listener(speech_recognizer=recognizer)
+        listener.running = False
+
+        await listener._process_audio_callback(b"audio")
+
+        recognizer.recognize.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_recognition_exception_does_not_crash(self):
+        recognizer = Mock(spec=SpeechRecognizer)
+        recognizer.recognize = AsyncMock(side_effect=Exception("network error"))
+
+        listener = make_listener(speech_recognizer=recognizer)
+        listener.running = True
+
+        await listener._process_audio_callback(b"audio")
 
 
-if __name__ == "__main__":
-    # Execução manual dos testes (para debugging)
-    import asyncio
+class TestCallbackRegistration:
 
-    async def run_tests():
-        listener = VoiceListener()
+    def test_register_command_handler_delegates_to_processor(self):
+        processor = Mock(spec=CommandProcessor)
+        listener = make_listener(command_processor=processor)
 
-        print("🧪 Testando inicialização...")
-        assert listener.wake_word == "aether", "Wake word incorreta"
-        print("✅ OK")
+        handler = Mock()
+        listener.register_command_handler("screenshot", handler)
 
-        print("🧪 Testando classificação de comandos...")
-        result = listener._classify_command("tira um print da tela")
-        assert result == "screenshot", f"Classificação incorreta: {result}"
-        print("✅ OK")
+        processor.register_command.assert_called_once_with("screenshot", handler)
 
-        print("🧪 Testando cálculo de confiança...")
-        confidence = listener._calculate_confidence("tela print")
-        assert 0.6 <= confidence <= 0.95, f"Confiança fora do esperado: {confidence}"
-        print("✅ OK")
+    def test_set_wake_callback_stored_on_processor(self):
+        processor = Mock(spec=CommandProcessor)
+        listener = make_listener(command_processor=processor)
 
-        print("\n🎉 Todos os testes básicos passaram!")
+        callback = Mock()
+        listener.set_wake_callback(callback)
 
-    asyncio.run(run_tests())
+        assert processor.on_wake_detected == callback
+
+    def test_set_command_callback_stored_on_processor(self):
+        processor = Mock(spec=CommandProcessor)
+        listener = make_listener(command_processor=processor)
+
+        callback = Mock()
+        listener.set_command_callback(callback)
+
+        assert processor.on_command_detected == callback
+
+
+class TestTestMicrophone:
+
+    @pytest.mark.asyncio
+    async def test_returns_true_when_speech_recognized(self):
+        audio = Mock(spec=AudioCapture)
+        audio.capture_audio = AsyncMock(return_value=b"audio_data")
+        recognizer = Mock(spec=SpeechRecognizer)
+        recognizer.recognize = AsyncMock(return_value="olá mundo")
+
+        listener = make_listener(audio_capture=audio, speech_recognizer=recognizer)
+        assert await listener.test_microphone() is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_no_audio_captured(self):
+        audio = Mock(spec=AudioCapture)
+        audio.capture_audio = AsyncMock(return_value=b"")
+
+        listener = make_listener(audio_capture=audio)
+        assert await listener.test_microphone() is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_when_speech_not_recognized(self):
+        audio = Mock(spec=AudioCapture)
+        audio.capture_audio = AsyncMock(return_value=b"audio_data")
+        recognizer = Mock(spec=SpeechRecognizer)
+        recognizer.recognize = AsyncMock(return_value=None)
+
+        listener = make_listener(audio_capture=audio, speech_recognizer=recognizer)
+        assert await listener.test_microphone() is False
