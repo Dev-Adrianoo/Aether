@@ -176,11 +176,11 @@ class TestVoiceListener:
         listener.recognizer.recognize_google.assert_called_once_with(mock_audio, language="pt-BR")
 
     @pytest.mark.asyncio
-    @patch('src.voice.voice_listener.sr')
-    async def test_recognize_speech_unknown_value(self, mock_sr, listener):
+    async def test_recognize_speech_unknown_value(self, listener):
         """Testa reconhecimento quando fala não é entendida"""
+        import speech_recognition as sr_real
         listener.recognizer = Mock()
-        listener.recognizer.recognize_google.side_effect = mock_sr.UnknownValueError
+        listener.recognizer.recognize_google.side_effect = sr_real.UnknownValueError
 
         mock_audio = Mock()
 
@@ -190,20 +190,20 @@ class TestVoiceListener:
 
     @pytest.mark.asyncio
     @patch('src.voice.voice_listener.Path')
-    @patch('src.voice.voice_listener.json')
-    async def test_log_command(self, mock_json, mock_path, listener):
+    async def test_log_command(self, mock_path, listener):
         """Testa registro de comando no log"""
-        # Mock do Path
-        mock_log_dir = Mock()
+        # Mock do Path usando MagicMock para suportar operador /
+        from unittest.mock import MagicMock
+        mock_log_dir = MagicMock()
         mock_log_dir.mkdir.return_value = None
-        mock_log_file = Mock()
+        mock_log_file = MagicMock()
         mock_log_dir.__truediv__.return_value = mock_log_file
 
         mock_path.return_value.parent = mock_log_dir
         mock_path.return_value.__str__.return_value = "/fake/path/commands.jsonl"
 
-        # Mock do open
-        mock_file = Mock()
+        # Mock do open (MagicMock para suportar context manager __enter__/__exit__)
+        mock_file = MagicMock()
         mock_file.__enter__.return_value = mock_file
 
         with patch('builtins.open', return_value=mock_file):

@@ -9,6 +9,16 @@ import logging
 from typing import Optional
 from config import config
 
+try:
+    import edge_tts
+except ImportError:
+    edge_tts = None
+
+try:
+    import pyttsx3
+except ImportError:
+    pyttsx3 = None
+
 logger = logging.getLogger(__name__)
 
 class TTSEngine:
@@ -33,12 +43,14 @@ class TTSEngine:
         try:
             if self.use_edge_tts:
                 # edge-tts para qualidade melhor (online)
-                import edge_tts
+                if edge_tts is None:
+                    raise ImportError("edge_tts não instalado")
                 self.engine = edge_tts
                 logger.info("Edge-TTS configurado (online)")
             else:
                 # pyttsx3 para uso offline
-                import pyttsx3
+                if pyttsx3 is None:
+                    raise ImportError("pyttsx3 não instalado")
                 self.engine = pyttsx3.init()
                 self.engine.setProperty('rate', self.rate)  # Velocidade da configuração
                 self.engine.setProperty('volume', 0.9)  # Volume alto
@@ -76,8 +88,6 @@ class TTSEngine:
         try:
             if self.use_edge_tts and self.engine:
                 # edge-tts (assíncrono)
-                import edge_tts
-
                 # Determinar voz baseada na configuração
                 voice_map = {
                     'pt-br': 'pt-BR-FranciscaNeural',
