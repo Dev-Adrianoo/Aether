@@ -22,21 +22,17 @@ class CommandProcessor:
         self.fuzzy_threshold = fuzzy_threshold
         self.last_wake_time = 0
 
-        # Variações fonéticas comuns
         self.wake_variations = self._generate_wake_variations(wake_word)
 
-        # Callbacks
         self.on_wake_detected: Optional[Callable] = None
         self.on_command_detected: Optional[Callable] = None
 
-        # Comandos registrados
         self.command_handlers: Dict[str, Callable] = {}
 
     def _generate_wake_variations(self, word: str) -> List[str]:
         """Gera variações fonéticas comuns para português"""
         variations = [word.lower()]
 
-        # Variações fonéticas comuns
         phonetic_variations = [
             word.lower(),
             word.lower().replace('th', 't'),      # aether → aeter
@@ -46,7 +42,6 @@ class CommandProcessor:
             word.lower().replace('th', ''),       # aether → ae
         ]
 
-        # Adicionar variações únicas
         for var in phonetic_variations:
             if var not in variations:
                 variations.append(var)
@@ -55,7 +50,6 @@ class CommandProcessor:
         return variations
 
     def register_command(self, command_type: str, handler: Callable):
-        """Registra handler para tipo de comando"""
         self.command_handlers[command_type] = handler
 
     async def process_text(self, text: str) -> bool:
@@ -69,11 +63,9 @@ class CommandProcessor:
         text_lower = text.lower()
         current_time = time.time()
 
-        # Verificar wake word com fuzzy matching
         wake_detected, matched_word = self._detect_wake_word(text_lower)
 
         if wake_detected:
-            # Cooldown
             if current_time - self.last_wake_time < self.cooldown:
                 logger.debug(f"Wake word em cooldown: {matched_word}")
                 return True
@@ -81,7 +73,6 @@ class CommandProcessor:
             self.last_wake_time = current_time
             logger.info(f"Wake word detectada: '{matched_word}' (original: '{self.wake_word}')")
 
-            # Extrair comando (usando a palavra detectada)
             command_start = text_lower.find(matched_word) + len(matched_word)
             command_text = text_lower[command_start:].strip()
 
@@ -91,7 +82,6 @@ class CommandProcessor:
             else:
                 logger.info("Wake word sem comando")
 
-            # Callback de wake word
             if self.on_wake_detected:
                 await self.on_wake_detected()
 

@@ -83,16 +83,13 @@ class AetherConfig:
             print(f"⚠️  Arquivo {env_file} não encontrado. Usando valores padrão.")
 
     def _get_env(self, key: str, default: str) -> str:
-        """Obtém variável de ambiente com fallback"""
         return os.getenv(key, default)
 
     def _get_env_int(self, key: str, default: int) -> int:
-        """Obtém variável de ambiente como inteiro"""
         value = os.getenv(key)
         return int(value) if value else default
 
     def _get_env_bool(self, key: str, default: bool) -> bool:
-        """Obtém variável de ambiente como booleano"""
         value = os.getenv(key, '').lower()
         if value in ('true', '1', 'yes', 'on'):
             return True
@@ -101,7 +98,6 @@ class AetherConfig:
         return default
 
     def _load_audio_config(self) -> AudioConfig:
-        """Carrega configurações de áudio"""
         return AudioConfig(
             wake_word=self._get_env('AETHER_WAKE_WORD', 'aether'),
             sample_rate=self._get_env_int('AETHER_AUDIO_SAMPLE_RATE', 16000),
@@ -112,7 +108,6 @@ class AetherConfig:
         )
 
     def _load_openclaude_config(self) -> OpenClaudeConfig:
-        """Carrega configurações da API OpenClaude"""
         return OpenClaudeConfig(
             api_key=self._get_env('OPENCLAUDE_API_KEY', ''),
             base_url=self._get_env('OPENCLAUDE_BASE_URL', 'https://api.openclaude.ai/v1'),
@@ -120,7 +115,6 @@ class AetherConfig:
         )
 
     def _load_obsidian_config(self) -> ObsidianConfig:
-        """Carrega configurações do Obsidian"""
         vault_path = Path(self._get_env('OBSIDIAN_VAULT_PATH', 'C:/Users/Adria/Documents/Obsidian Vault'))
         return ObsidianConfig(
             vault_path=vault_path,
@@ -128,7 +122,6 @@ class AetherConfig:
         )
 
     def _load_tts_config(self) -> TTSConfig:
-        """Carrega configurações de TTS"""
         return TTSConfig(
             engine=self._get_env('TTS_ENGINE', 'pyttsx3'),
             voice=self._get_env('TTS_VOICE', 'pt-br'),
@@ -136,7 +129,6 @@ class AetherConfig:
         )
 
     def _load_vision_config(self) -> VisionConfig:
-        """Carrega configurações de visão"""
         save_path = Path(self._get_env('SCREENSHOT_SAVE_PATH', './data/screenshots'))
         save_path.mkdir(parents=True, exist_ok=True)
 
@@ -147,7 +139,6 @@ class AetherConfig:
         )
 
     def _load_logging_config(self) -> LoggingConfig:
-        """Carrega configurações de logging"""
         log_file = Path(self._get_env('LOG_FILE', 'aether.log'))
         return LoggingConfig(
             level=self._get_env('LOG_LEVEL', 'INFO'),
@@ -206,5 +197,4 @@ class AetherConfig:
         print(f"   Arquivo: {self.logging.log_file}")
         print("="*50 + "\n")
 
-# Instância global de configuração
 config = AetherConfig()

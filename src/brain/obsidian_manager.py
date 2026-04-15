@@ -27,7 +27,6 @@ class ObsidianManager:
         logger.info(f"ObsidianManager inicializado (vault: {self.vault_path})")
 
     def ensure_directories(self):
-        """Garante que todos os diretórios necessários existam"""
         for directory in [self.aether_dir, self.interactions_dir, self.screenshots_dir, self.insights_dir]:
             directory.mkdir(parents=True, exist_ok=True)
 
@@ -37,15 +36,12 @@ class ObsidianManager:
             interaction_type = data.get('type', 'unknown')
             timestamp = data.get('timestamp', datetime.now().isoformat())
 
-            # Criar nome de arquivo baseado no tipo e timestamp
             safe_timestamp = timestamp.replace(':', '-').replace('.', '-')
             filename = f"{interaction_type}_{safe_timestamp}.md"
             filepath = self.interactions_dir / filename
 
-            # Formatar conteúdo em markdown
             content = self._format_interaction_markdown(data)
 
-            # Salvar arquivo
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(content)
 
@@ -73,7 +69,6 @@ timestamp: {timestamp}
 
 """
 
-        # Adicionar campos específicos baseados no tipo
         if interaction_type == 'voice_command':
             content += f"""
 ## Comando de Voz
@@ -110,7 +105,6 @@ timestamp: {timestamp}
 {data.get('insights', 'Nenhum insight')}
 """
 
-        # Adicionar metadados brutos
         content += f"""
 
 ---
@@ -177,11 +171,9 @@ dimensions: {screenshot_data.get('dimensions', (0, 0))}
 ### Elementos Detectados
 """
 
-            # Listar elementos detectados
             for element in analysis.get('detected_elements', []):
                 content += f"- {element}\n"
 
-            # Adicionar metadados completos
             content += f"""
 
 ---
@@ -273,5 +265,4 @@ tags: {', '.join(tag_list)}
             return []
 
     async def shutdown(self):
-        """Encerra o gerenciador"""
         logger.info("ObsidianManager encerrado")

@@ -87,8 +87,6 @@ class TTSEngine:
 
         try:
             if self.use_edge_tts and self.engine:
-                # edge-tts (assíncrono)
-                # Determinar voz baseada na configuração
                 voice_map = {
                     'pt-br': 'pt-BR-FranciscaNeural',
                     'pt-pt': 'pt-PT-RaquelNeural',
@@ -99,13 +97,11 @@ class TTSEngine:
 
                 communicate = edge_tts.Communicate(text, voice)
 
-                # Gerar áudio em memória
                 audio_data = bytearray()
                 async for chunk in communicate.stream():
                     if chunk["type"] == "audio":
                         audio_data.extend(chunk["data"])
 
-                # Reproduzir áudio
                 if audio_data:
                     await self._play_audio(audio_data)
                     logger.debug(f"Áudio reproduzido: {len(audio_data)} bytes, voz: {voice}")
@@ -171,14 +167,11 @@ class TTSEngine:
         import tempfile
         import os
 
-        # edge-tts retorna áudio em formato MP3
-        # Salvar áudio em arquivo temporário
         with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as tmpfile:
             tmp_path = tmpfile.name
             tmpfile.write(audio_data)
 
         try:
-            # Tentar pyaudio primeiro (com pydub para decodificar MP3)
             try:
                 import pydub
                 from pydub.playback import play
@@ -189,7 +182,6 @@ class TTSEngine:
                 logger.debug("Áudio reproduzido com pydub")
 
             except ImportError:
-                # Fallback para pygame
                 try:
                     import pygame
 
@@ -197,7 +189,6 @@ class TTSEngine:
                     pygame.mixer.music.load(tmp_path)
                     pygame.mixer.music.play()
 
-                    # Aguardar término
                     while pygame.mixer.music.get_busy():
                         import asyncio
                         await asyncio.sleep(0.1)
@@ -205,14 +196,12 @@ class TTSEngine:
                     logger.debug("Áudio reproduzido com pygame")
 
                 except ImportError:
-                    # Fallback para playsound (simples)
                     try:
                         import playsound
                         playsound.playsound(tmp_path)
                         logger.debug("Áudio reproduzido com playsound")
 
                     except ImportError:
-                        # Fallback final: apenas log
                         logger.warning("Nenhuma biblioteca de reprodução disponível")
                         logger.info("Instale: pip install pydub pygame playsound")
                         logger.debug(f"Áudio gerado mas não reproduzido: {len(audio_data)} bytes")
@@ -221,14 +210,12 @@ class TTSEngine:
             logger.error(f"Erro ao reproduzir áudio: {e}")
             # Fallback silencioso - pelo menos o texto é impresso
         finally:
-            # Limpar arquivo temporário
             try:
                 os.unlink(tmp_path)
             except:
                 pass
 
     async def shutdown(self):
-        """Encerra o motor de TTS"""
         if self.engine and not self.use_edge_tts:
             self.engine.stop()
 

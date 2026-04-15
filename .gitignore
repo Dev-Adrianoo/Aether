@@ -48,6 +48,7 @@ Thumbs.db
 # Project specific
 data/screenshots/
 data/audio_logs/
+data/command_logs/
 data/knowledge_db/
 *.log
 aether.log
