@@ -169,26 +169,22 @@ class CommandProcessor:
             await self.on_command_detected(command_text, confidence, command_type)
 
     def _classify_command(self, text: str) -> str:
-        """Classifica tipo de comando"""
+        """
+        Classificador leve — só para stop (segurança) e terminal.
+        Tudo mais vai pro LLM router em main.py.
+        """
         text_lower = text.lower()
 
-        command_patterns = {
-            # code_agent e openclaude ANTES de action/screenshot — evita conflitos
-            "code_agent": ["código", "codigo", "programa", "cria arquivo", "desenvolve", "refatora", "implementa", "escreve o código", "faz o código"],
-            "openclaude": ["terminal", "openclaude", "open claude"],
-            "screenshot": ["captura tela", "tira print", "tirasse print", "tira screenshot", "screenshot", "mostra a tela", "print da tela", "captura a tela", "foto da tela", "foto da minha tela", "printscreen", "print screen"],
-            "stop": ["para tudo", "pare tudo", "encerra", "sai agora", "fechar tudo", "stop"],
-            "help": ["ajuda", "help", "comandos"],
-            "status": ["status"],
-            "action": ["abre", "abrir", "fecha o", "fechar o", "toca", "play", "pause", "inicia", "iniciar", "lança", "lançar"],
-            "task": ["anota", "anote", "tarefa", "lembra", "lembre", "adiciona", "adicione", "registra", "registre"],
-        }
+        # Stop é crítico — não pode depender de API
+        if any(p in text_lower for p in ["para tudo", "pare tudo", "encerra", "sai agora", "fechar tudo", "stop"]):
+            return "stop"
 
-        for command_type, patterns in command_patterns.items():
-            if any(pattern in text_lower for pattern in patterns):
-                return command_type
+        # Terminal é rápido e local
+        if any(p in text_lower for p in ["terminal", "openclaude", "open claude"]):
+            return "openclaude"
 
-        return "unknown"
+        # Tudo mais: LLM decide
+        return "llm_route"
 
     def _calculate_confidence(self, text: str) -> float:
         """Calcula confiança no reconhecimento"""

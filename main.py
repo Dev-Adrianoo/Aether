@@ -95,10 +95,9 @@ class AetherSensorySystem:
         hearing.register_command_handler("status", self._handle_status_command)
         hearing.register_command_handler("action", self._handle_action)
         hearing.register_command_handler("task", self._handle_task_command)
-        hearing.register_command_handler("code_agent", self._handle_code_agent)
+        hearing.register_command_handler("llm_route", self._handle_llm_route)
         hearing.register_command_handler("openclaude", self._handle_openclaude_terminal)
-        hearing.register_command_handler("conversation", self._handle_conversation)
-        hearing.register_command_handler("unknown", self._handle_conversation)
+        hearing.register_command_handler("unknown", self._handle_llm_route)
 
     def _parse_monitor(self, command_text: str) -> int:
         text = command_text.lower()
@@ -140,63 +139,95 @@ class AetherSensorySystem:
         else:
             await self.modules['speech'].speak("Qual é a tarefa que devo anotar?")
 
+    async def _handle_llm_route(self, command_text: str, confidence: float):
+        """
+        Classificador LLM: uma chamada DeepSeek entende a intenção e roteia.
+        Sem keywords. Qualquer fala natural funciona.
+        """
+        import json as _json
+
+        llm = self.modules['integration']
+        speech = self.modules['speech']
+
+        classification_prompt = f"""Você recebe texto de comando de voz (pode estar garrafado pelo STT).
+Analise e retorne APENAS JSON válido com a intenção. Nenhum texto adicional.
+
+Tipos disponíveis:
+- screenshot: capturar tela → {{"type":"screenshot","monitor":1}}  (monitor: 1=esquerda/padrão, 2=direita/segundo)
+- action: abrir aplicativo → {{"type":"action","app":"youtube"}}  (apps válidos: youtube, spotify, vscode, unity, obsidian)
+- task: anotar tarefa → {{"type":"task","text":"texto da tarefa"}}
+- code_agent: criar/editar arquivos, rodar comandos, navegar pastas → {{"type":"code_agent","prompt":"prompt técnico claro"}}
+- conversation: conversa geral → {{"type":"conversation","response":"resposta em 1-2 frases coloquiais"}}
+
+Regras:
+- screenshot: qualquer pedido de capturar/fotografar/printar/foto da tela
+- action: abrir/fechar apps específicos por nome
+- code_agent: qualquer execução no sistema de arquivos ou terminal
+- conversation: perguntas, comentários, qualquer coisa que não se encaixe acima
+- Para code_agent: o prompt deve ser técnico, claro, sem gírias, com caminhos absolutos se relevante
+
+Texto recebido: "{command_text}"
+
+Retorne APENAS o JSON."""
+
+        raw = await llm.ask_question(classification_prompt)
+        if not raw:
+            await speech.speak("Não entendi. Pode repetir?")
+            return
+
+        # Extrai JSON da resposta (LLM às vezes adiciona markdown)
+        try:
+            raw_clean = raw.strip().strip("```json").strip("```").strip()
+            intent = _json.loads(raw_clean)
+        except Exception:
+            # Fallback: trata como conversa
+            await speech.speak(raw[:200])
+            return
+
+        intent_type = intent.get("type", "conversation")
+
+        if intent_type == "screenshot":
+            monitor = intent.get("monitor", 1)
+            fake_text = "direita" if monitor == 2 else "esquerda"
+            await self._handle_screenshot_command(fake_text, confidence)
+
+        elif intent_type == "action":
+            app = intent.get("app", "")
+            await self._handle_action(app, confidence)
+
+        elif intent_type == "task":
+            text = intent.get("text", "")
+            await self._handle_task_command(text, confidence)
+
+        elif intent_type == "code_agent":
+            prompt = intent.get("prompt", command_text)
+            await self._handle_code_agent(prompt, confidence)
+
+        elif intent_type == "conversation":
+            response = intent.get("response", "")
+            if response:
+                await speech.speak(response)
+            else:
+                await self._handle_conversation(command_text, confidence)
+
+        else:
+            await self._handle_conversation(command_text, confidence)
+
     async def _handle_code_agent(self, command_text: str, confidence: float):
+        """Recebe prompt ja limpo do LLM router e envia pro OpenClaude."""
         oc = self.modules.get('openclaude')
         if not oc:
-            await self.modules['speech'].speak("OpenClaude não está disponível.")
+            await self.modules['speech'].speak("OpenClaude nao esta disponivel.")
             return
 
-        speech = self.modules['speech']
-        llm = self.modules['integration']
-
-        # Passo 1: DeepSeek interpreta a intenção e decide se entendeu ou precisa perguntar
         aether_dir = str(Path(__file__).parent)
-        aether_keywords = ["aether", "você mesmo", "em você", "no seu código", "se mesmo", "a si mesmo", "obsidian", "vault", "comando novo", "nova ação", "nova action"]
-        is_self_modification = any(kw in command_text.lower() for kw in aether_keywords)
-        working_dir = aether_dir if is_self_modification else str(Path.home() / "Documents")
+        aether_keywords = ["aether", "voce mesmo", "em voce", "no seu codigo", "obsidian", "vault", "nova acao", "system_actions", "registry"]
+        is_self = any(kw in command_text.lower() for kw in aether_keywords)
+        working_dir = aether_dir if is_self else str(Path.home() / "Documents")
 
-        # Detecta pasta mencionada explicitamente
-        import re
-        folder_match = re.search(r'(?:dentro de|na pasta|em|no)\s+([\w\s]+?)(?:\s+cria|\s+faz|\s+e\s|$)', command_text.lower())
-        if folder_match and not is_self_modification:
-            folder_name = folder_match.group(1).strip()
-            candidate = Path.home() / "Documents" / folder_name
-            working_dir = str(candidate)
-
-        context_note = ""
-        if is_self_modification:
-            context_note = f"\nIMPORTANTE: Esta tarefa modifica o próprio Aether. O projeto está em: {aether_dir}\nArquivos de ação: src/actions/system_actions.py e src/actions/registry.py"
-
-        interpret_prompt = f"""O usuário disse por voz (pode estar garrafado pelo reconhecimento de fala):
-"{command_text}"
-
-Contexto: projeto LuminaXR — modelador 3D em XR/VR com Unity e C#. Fase atual: sistema sensorial Python (Aether).{context_note}
-
-Sua tarefa:
-- Se você entendeu o que ele quer fazer no código: responda APENAS com "EXECUTAR: " seguido de um prompt técnico claro e completo para um agente de código executar. Seja específico: arquivos, linguagem, o que criar/modificar.
-- Se ficou ambíguo ou faltou informação essencial: responda APENAS com "PERGUNTA: " seguido de UMA pergunta curta e direta para esclarecer.
-
-Não explique. Não use markdown. Só "EXECUTAR: ..." ou "PERGUNTA: ..."."""
-
-        interpretation = await llm.ask_question(interpret_prompt)
-        if not interpretation:
-            await speech.speak("Não consegui interpretar o comando. Pode repetir?")
-            return
-
-        if interpretation.startswith("PERGUNTA:"):
-            question = interpretation[len("PERGUNTA:"):].strip()
-            await speech.speak(question)
-            # Próxima fala do usuário vai pro modo conversa normal — ele responde a pergunta
-            return
-
-        if interpretation.startswith("EXECUTAR:"):
-            final_prompt = interpretation[len("EXECUTAR:"):].strip()
-            await speech.speak("Entendido. Abrindo o terminal.")
-            oc.run_visible(prompt=final_prompt, working_dir=working_dir)
-            await speech.speak("OpenClaude tá trabalhando. Acompanha no terminal.")
-        else:
-            # Formato inesperado — trata como conversa
-            await speech.speak(interpretation)
+        await self.modules['speech'].speak("Entendido. Abrindo o terminal.")
+        oc.run_visible(prompt=command_text, working_dir=working_dir)
+        await self.modules['speech'].speak("OpenClaude ta trabalhando. Acompanha no terminal.")
 
     async def _handle_openclaude_terminal(self, command_text: str, confidence: float):
         oc = self.modules.get('openclaude')
