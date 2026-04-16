@@ -18,3 +18,7 @@ pytesseract>=0.3.10  # requer tesseract-ocr instalado no sistema
 # Integração e utilitários
 aiohttp>=3.9.0
 python-dotenv>=1.0.0
+
+# gRPC — integração OpenClaude headless
+grpcio>=1.62.0
+grpcio-tools>=1.62.0

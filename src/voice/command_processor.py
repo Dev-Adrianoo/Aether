@@ -17,7 +17,7 @@ class CommandProcessor:
     """Processa comandos de voz extraídos do texto"""
 
     def __init__(self, wake_word: str = "aether", cooldown: float = 2.0, fuzzy_threshold: float = 0.6,
-                 conversation_timeout: float = 45.0):
+                 conversation_timeout: float = 120.0):
         self.wake_word = wake_word.lower()
         self.cooldown = cooldown
         self.fuzzy_threshold = fuzzy_threshold
@@ -179,6 +179,7 @@ class CommandProcessor:
             "status": ["status"],
             "action": ["abre", "abrir", "fecha o", "fechar o", "toca", "play", "pause", "inicia", "iniciar", "lança", "lançar"],
             "task": ["anota", "anote", "tarefa", "lembra", "lembre", "adiciona", "adicione", "registra", "registre"],
+            "openclaude": ["mostra o terminal", "abre o terminal", "esconde o terminal", "fecha o terminal", "mostra openclaude", "abre openclaude", "fecha openclaude"],
         }
 
         for command_type, patterns in command_patterns.items():

@@ -41,6 +41,14 @@ class AetherSensorySystem:
 
             print("Aether iniciando...")
 
+            from src.integrations.openclaude_subprocess import OpenClaudeSubprocess
+            oc = OpenClaudeSubprocess()
+            if oc.is_available():
+                self.modules['openclaude'] = oc
+                print("[OK] OpenClaude subprocess disponível")
+            else:
+                print("[WARN] OpenClaude não encontrado — modo voz desativado")
+
             self.modules['vision'] = ScreenshotManager()
             self.modules['hearing'] = VoiceListener(config={
                 'print_feedback': True,
@@ -87,6 +95,7 @@ class AetherSensorySystem:
         hearing.register_command_handler("status", self._handle_status_command)
         hearing.register_command_handler("action", self._handle_action)
         hearing.register_command_handler("task", self._handle_task_command)
+        hearing.register_command_handler("openclaude", self._handle_openclaude_terminal)
         hearing.register_command_handler("conversation", self._handle_conversation)
         hearing.register_command_handler("unknown", self._handle_conversation)
 
@@ -122,10 +131,26 @@ class AetherSensorySystem:
                 task_text = command_text[idx:].strip(" :,-")
                 break
         if task_text:
-            feedback = write_claude_task(task_text)
-            await self.modules['speech'].speak(feedback)
+            write_claude_task(task_text)
+            response = await self.modules['integration'].ask_question(
+                f"Acabei de anotar a tarefa: '{task_text}'. Confirme de forma natural e breve."
+            )
+            await self.modules['speech'].speak(response or "Anotado.")
         else:
             await self.modules['speech'].speak("Qual é a tarefa que devo anotar?")
+
+    async def _handle_openclaude_terminal(self, command_text: str, confidence: float):
+        oc = self.modules.get('openclaude')
+        if not oc:
+            await self.modules['speech'].speak("OpenClaude não está disponível.")
+            return
+        text = command_text.lower()
+        if any(w in text for w in ["mostra", "abre", "exibe", "abrir"]):
+            oc.show_terminal()
+            await self.modules['speech'].speak("Abrindo OpenClaude.")
+        elif any(w in text for w in ["esconde", "fecha", "oculta", "fechar"]):
+            oc.hide_terminal()
+            await self.modules['speech'].speak("Fechando OpenClaude.")
 
     async def _handle_action(self, command_text: str, confidence: float):
         from src.actions.registry import dispatch
@@ -163,7 +188,7 @@ class AetherSensorySystem:
                 'timestamp': datetime.now().isoformat()
             })
         else:
-            await self.modules['speech'].speak("Não consegui obter uma resposta")
+            await self.modules['speech'].speak("Não consegui responder agora. Pode repetir?")
 
     async def _handle_screenshot(self, screenshot_data, analysis):
         logger.debug(f"Screenshot: {analysis.get('summary', '')}")
