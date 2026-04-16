@@ -105,11 +105,11 @@ class SoundDeviceCapture(AudioCapture):
                 sd_mod.wait()
                 return data
 
-            logger.info("Calibrando microfone (mantenha silêncio)...")
+            print("Calibrando microfone (1s de silêncio)...")
             data = await loop.run_in_executor(None, record)
             ambient_rms = float(np.sqrt(np.mean(data.astype(np.float64) ** 2)))
             self.energy_threshold = max(ambient_rms * 2.5, 80.0)
-            logger.info(f"Calibração: ambiente={ambient_rms:.1f} RMS → threshold={self.energy_threshold:.1f} RMS")
+            print(f"Threshold definido: {self.energy_threshold:.0f} RMS (ambiente: {ambient_rms:.0f})")
             return self.energy_threshold
 
         except Exception as e:

@@ -9,25 +9,26 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('aether.log'),
-        logging.StreamHandler()
-    ]
-)
+# Arquivo: tudo em DEBUG para diagnóstico
+_file_handler = logging.FileHandler('aether.log')
+_file_handler.setLevel(logging.DEBUG)
+_file_handler.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s'))
+
+# Console: só erros reais — o output visual vem dos print() nos módulos
+_console_handler = logging.StreamHandler()
+_console_handler.setLevel(logging.WARNING)
+_console_handler.setFormatter(logging.Formatter('WARN  %(message)s'))
+
+logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handler])
 logger = logging.getLogger(__name__)
 
 
 class AetherSensorySystem:
-    """Sistema sensorial principal do Aether"""
 
     def __init__(self):
         self.base_dir = Path(__file__).parent
         self.running = False
         self.modules = {}
-        logger.info("Aether Sensory System inicializando...")
 
     async def initialize(self):
         try:
@@ -37,6 +38,8 @@ class AetherSensorySystem:
             from src.integrations.openclaude_client import OpenClaudeClient
             from src.brain.obsidian_manager import ObsidianManager
             from config import config
+
+            print("Aether iniciando...")
 
             self.modules['vision'] = ScreenshotManager()
             self.modules['hearing'] = VoiceListener(config={'print_feedback': True})
@@ -51,22 +54,21 @@ class AetherSensorySystem:
 
             openclaude_ok = await self.modules['integration'].initialize()
             if openclaude_ok:
-                logger.info("[OK] OpenClaude conectado e pronto para conversar")
+                print("[OK] LLM conectado (DeepSeek)")
             else:
-                logger.warning("[WARN] OpenClaude em modo offline")
+                print("[WARN] LLM offline — conversa livre indisponível")
                 await self.modules['speech'].speak(
                     "Atenção: sem conexão com o LLM. Conversa livre indisponível."
                 )
 
             self._setup_callbacks()
-            logger.info("Todos os módulos inicializados com sucesso")
             return True
 
         except ImportError as e:
-            logger.error(f"Erro ao importar módulos: {e}")
+            print(f"[ERRO] Módulo não encontrado: {e}")
             return False
         except Exception as e:
-            logger.error(f"Erro na inicialização: {e}")
+            print(f"[ERRO] Falha na inicialização: {e}")
             return False
 
     def _setup_callbacks(self):
@@ -101,7 +103,7 @@ class AetherSensorySystem:
 
     async def _handle_status_command(self, command_text: str, confidence: float):
         await self.modules['speech'].speak(
-            "Online e funcionando. OpenClaude conectado, voz ativa."
+            "Online e funcionando. LLM conectado, voz ativa."
         )
 
     async def _handle_help_command(self, command_text: str, confidence: float):
@@ -111,10 +113,8 @@ class AetherSensorySystem:
         )
 
     async def _handle_conversation(self, command_text: str, confidence: float):
-        """Encaminha comando livre ao LLM e fala a resposta."""
-        logger.info(f"Conversa: {command_text}")
+        logger.debug(f"Conversa: {command_text}")
         response = await self.modules['integration'].ask_question(command_text)
-
         if response:
             await self.modules['speech'].speak(response)
             await self._log_to_obsidian({
@@ -128,7 +128,7 @@ class AetherSensorySystem:
             await self.modules['speech'].speak("Não consegui obter uma resposta")
 
     async def _handle_screenshot(self, screenshot_data, analysis):
-        logger.info(f"Screenshot: {analysis.get('summary', 'Sem resumo')}")
+        logger.debug(f"Screenshot: {analysis.get('summary', '')}")
         if analysis.get('has_errors') or analysis.get('needs_attention'):
             await self.modules['integration'].send_visual_context(screenshot_data, analysis)
 
@@ -137,19 +137,18 @@ class AetherSensorySystem:
 
     async def run(self):
         if not await self.initialize():
-            logger.error("Falha na inicialização. Encerrando.")
+            print("[ERRO] Falha na inicialização. Encerrando.")
             return
 
         self.running = True
-        logger.info("Aether Sensory System iniciado. Pressione Ctrl+C para encerrar.")
+        print("Pronto. Diga 'Aether' para ativar.\n")
 
         try:
             await asyncio.gather(
                 self.modules['hearing'].start(),
-                # self.modules['vision'].start_monitoring(),
             )
-        except KeyboardInterrupt:
-            logger.info("Encerrando por solicitação do usuário...")
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            pass
         except Exception as e:
             logger.error(f"Erro no loop principal: {e}")
         finally:
@@ -157,13 +156,12 @@ class AetherSensorySystem:
 
     async def shutdown(self):
         self.running = False
-        logger.info("Encerrando módulos...")
         for module in self.modules.values():
             if hasattr(module, 'stop'):
                 await module.stop()
             elif hasattr(module, 'shutdown'):
                 await module.shutdown()
-        logger.info("Aether Sensory System encerrado.")
+        print("\nAether encerrado.")
 
 
 async def main():
