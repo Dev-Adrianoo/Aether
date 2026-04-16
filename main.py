@@ -42,7 +42,11 @@ class AetherSensorySystem:
             print("Aether iniciando...")
 
             self.modules['vision'] = ScreenshotManager()
-            self.modules['hearing'] = VoiceListener(config={'print_feedback': True})
+            self.modules['hearing'] = VoiceListener(config={
+                'print_feedback': True,
+                'device_index': config.audio.device_index,
+                'sample_rate': config.audio.sample_rate,
+            })
             self.modules['speech'] = TTSEngine(use_edge_tts=config.tts.engine == 'edge-tts')
             self.modules['integration'] = OpenClaudeClient()
             self.modules['brain'] = ObsidianManager(

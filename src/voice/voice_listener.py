@@ -27,10 +27,13 @@ class VoiceListener:
         config: Optional[dict] = None
     ):
         # Dependency Injection ou criação padrão
+        cfg = (config or {})
+        _device = cfg.get('device_index', 47)
+        _rate   = cfg.get('sample_rate', 44100)
         self.audio_capture = audio_capture or AudioCaptureFactory.create_capture(
             method="sounddevice",
-            device=47,        # WDM-KS USB mic (RMS ~270 com voz)
-            sample_rate=44100  # MME device 1 retorna zeros; WDM-KS exige 44100Hz
+            device=_device,
+            sample_rate=_rate,
         )
         self.speech_recognizer = speech_recognizer or SpeechRecognizer(language="pt-BR")
         self.command_processor = command_processor or CommandProcessor(wake_word="aether")

@@ -17,6 +17,7 @@ class AudioConfig:
     phrase_time_limit: int
     energy_threshold: int
     pause_threshold: float
+    device_index: Optional[int]  # None = usar padrão do SO
 
 @dataclass
 class OpenClaudeConfig:
@@ -98,13 +99,15 @@ class AetherConfig:
         return default
 
     def _load_audio_config(self) -> AudioConfig:
+        device_raw = os.getenv('AUDIO_DEVICE_INDEX')
         return AudioConfig(
             wake_word=self._get_env('AETHER_WAKE_WORD', 'aether'),
-            sample_rate=self._get_env_int('AETHER_AUDIO_SAMPLE_RATE', 16000),
+            sample_rate=self._get_env_int('AUDIO_SAMPLE_RATE', 44100),
             channels=self._get_env_int('AETHER_AUDIO_CHANNELS', 1),
             phrase_time_limit=self._get_env_int('AETHER_PHRASE_TIME_LIMIT', 5),
             energy_threshold=self._get_env_int('AETHER_ENERGY_THRESHOLD', 4000),
-            pause_threshold=0.8
+            pause_threshold=0.8,
+            device_index=int(device_raw) if device_raw is not None else 47
         )
 
     def _load_openclaude_config(self) -> OpenClaudeConfig:
