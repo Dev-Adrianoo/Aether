@@ -140,12 +140,14 @@ class OpenClaudeSubprocess:
             self._terminal_proc.terminate()
             self._terminal_proc = None
 
-        ps_cmd = (
-            f'node "{OPENCLAUDE_BIN}" '
-            f'--dangerously-skip-permissions '
-            f'-p (Get-Content -Raw "{tmp.name}")'
-        )
-        cmd = f'start powershell -NoExit -WorkingDirectory "{cwd}" -Command "{ps_cmd}"'
+        # Escreve script .ps1 — evita todo problema de escaping de aspas
+        ps1 = tempfile.NamedTemporaryFile(mode='w', suffix='.ps1', delete=False, encoding='utf-8')
+        ps1.write(f"Set-Location '{cwd}'\n")
+        ps1.write(f"$prompt = Get-Content -Raw '{tmp.name}'\n")
+        ps1.write(f"node '{OPENCLAUDE_BIN}' --dangerously-skip-permissions -p $prompt\n")
+        ps1.close()
+
+        cmd = f'start powershell -NoExit -File "{ps1.name}"'
         self._terminal_proc = subprocess.Popen(cmd, shell=True)
         logger.info(f"OpenClaude visível (singleton) em: {cwd}")
 
