@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 class CommandProcessor:
     """Processa comandos de voz extraídos do texto"""
 
-    def __init__(self, wake_word: str = "aether", cooldown: float = 2.0, fuzzy_threshold: float = 0.6):
+    def __init__(self, wake_word: str = "aether", cooldown: float = 2.0, fuzzy_threshold: float = 0.6,
+                 conversation_timeout: float = 45.0):
         self.wake_word = wake_word.lower()
         self.cooldown = cooldown
         self.fuzzy_threshold = fuzzy_threshold
@@ -28,6 +29,9 @@ class CommandProcessor:
         self.on_command_detected: Optional[Callable] = None
 
         self.command_handlers: Dict[str, Callable] = {}
+
+        self._conv_timeout = conversation_timeout
+        self._conv_last = 0.0
 
     def _generate_wake_variations(self, word: str) -> List[str]:
         """Gera variações fonéticas comuns para português"""
@@ -52,10 +56,14 @@ class CommandProcessor:
     def register_command(self, command_type: str, handler: Callable):
         self.command_handlers[command_type] = handler
 
+    @property
+    def in_conversation(self) -> bool:
+        return (time.time() - self._conv_last) < self._conv_timeout
+
     async def process_text(self, text: str) -> bool:
         """
         Processa texto reconhecido.
-        Retorna True se wake word foi detectada.
+        Retorna True se wake word foi detectada ou conversa está ativa.
         """
         if not text:
             return False
@@ -63,6 +71,22 @@ class CommandProcessor:
         text_lower = text.lower()
         current_time = time.time()
 
+        # Modo conversa ativo: qualquer fala vai direto pro handler sem wake word
+        if self.in_conversation:
+            wake_detected, matched_word = self._detect_wake_word(text_lower)
+            if wake_detected:
+                # Remove wake word do texto se presente
+                command_start = text_lower.find(matched_word) + len(matched_word)
+                command_text = text_lower[command_start:].strip() or text_lower
+            else:
+                command_text = text_lower
+
+            self._conv_last = current_time
+            logger.info(f"[conv] {command_text}")
+            await self._process_command(command_text)
+            return True
+
+        # Fora do modo conversa: exige wake word
         wake_detected, matched_word = self._detect_wake_word(text_lower)
 
         if wake_detected:
@@ -71,16 +95,16 @@ class CommandProcessor:
                 return True
 
             self.last_wake_time = current_time
-            logger.info(f"Wake word detectada: '{matched_word}' (original: '{self.wake_word}')")
+            self._conv_last = current_time
+            logger.info(f"Wake word detectada: '{matched_word}'")
 
             command_start = text_lower.find(matched_word) + len(matched_word)
             command_text = text_lower[command_start:].strip()
 
             if command_text:
-                logger.info(f"Comando extraído: '{command_text}'")
                 await self._process_command(command_text)
             else:
-                logger.info("Wake word sem comando")
+                logger.info("Wake word sem comando — modo conversa ativado")
 
             if self.on_wake_detected:
                 await self.on_wake_detected()
