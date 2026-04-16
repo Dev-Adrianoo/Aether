@@ -29,6 +29,9 @@ class AetherSensorySystem:
         self.base_dir = Path(__file__).parent
         self.running = False
         self.modules = {}
+        self._last_recognized = ""  # última fala reconhecida — usada para detectar correções
+        from src.voice.stt_corrector import STTCorrector
+        self.stt_corrector = STTCorrector()
 
     async def initialize(self):
         try:
@@ -146,6 +149,15 @@ class AetherSensorySystem:
         """
         import json as _json
 
+        # Aplica correções conhecidas antes de processar
+        corrected = self.stt_corrector.apply(command_text)
+        if corrected != command_text:
+            print(f"[STT corrigido] '{command_text}' → '{corrected}'")
+        command_text = corrected
+
+        last = self._last_recognized
+        self._last_recognized = command_text
+
         llm = self.modules['integration']
         speech = self.modules['speech']
 
@@ -157,14 +169,16 @@ Tipos disponíveis:
 - action: abrir aplicativo → {{"type":"action","app":"youtube"}}  (apps válidos: youtube, spotify, vscode, unity, obsidian)
 - task: anotar tarefa → {{"type":"task","text":"texto da tarefa"}}
 - code_agent: criar/editar arquivos, rodar comandos, navegar pastas → {{"type":"code_agent","prompt":"prompt técnico claro"}}
+- correction: usuário corrigindo transcrição errada → {{"type":"correction","wrong":"texto errado","right":"texto correto"}}
 - conversation: conversa geral → {{"type":"conversation","response":"resposta em 1-2 frases coloquiais"}}
 
 Regras:
 - screenshot: qualquer pedido de capturar/fotografar/printar/foto da tela
 - action: abrir/fechar apps específicos por nome
 - code_agent: qualquer execução no sistema de arquivos ou terminal
+- correction: quando o usuário diz "não era X", "corrija, eu disse Y", "não, eu quis dizer Z" — use a fala anterior como "wrong": "{last}"
 - conversation: perguntas, comentários, qualquer coisa que não se encaixe acima
-- Para code_agent: o prompt deve ser técnico, claro, sem gírias, com caminhos absolutos se relevante
+- Para code_agent: o prompt deve ser técnico, claro, sem gírias
 
 Texto recebido: "{command_text}"
 
@@ -202,6 +216,16 @@ Retorne APENAS o JSON."""
         elif intent_type == "code_agent":
             prompt = intent.get("prompt", command_text)
             await self._handle_code_agent(prompt, confidence)
+
+        elif intent_type == "correction":
+            wrong = intent.get("wrong", "").strip()
+            right = intent.get("right", "").strip()
+            if wrong and right:
+                self.stt_corrector.add(wrong, right)
+                await self._save_correction_to_vault(wrong, right)
+                await speech.speak(f"Entendido. Vou lembrar que '{wrong}' é '{right}'.")
+            else:
+                await speech.speak("Não entendi a correção. Pode repetir?")
 
         elif intent_type == "conversation":
             response = intent.get("response", "")
@@ -305,6 +329,17 @@ Retorne APENAS o JSON."""
         logger.debug(f"Screenshot: {analysis.get('summary', '')}")
         if analysis.get('has_errors') or analysis.get('needs_attention'):
             await self.modules['integration'].send_visual_context(screenshot_data, analysis)
+
+    async def _save_correction_to_vault(self, wrong: str, right: str):
+        """Registra correção de STT no vault Obsidian."""
+        vault = Path(r"C:\Users\Adria\Documents\Documentation\Dev-Aether-logs")
+        corrections_note = vault / "04_APRENDIZADOS" / "LEARN_STT_corrections.md"
+        from datetime import datetime
+        entry = f"- `{wrong}` → `{right}`  <!-- {datetime.now().strftime('%Y-%m-%d %H:%M')} -->\n"
+        if not corrections_note.exists():
+            corrections_note.write_text("# Correções STT\n\nMapeamentos aprendidos automaticamente.\n\n", encoding="utf-8")
+        with open(corrections_note, "a", encoding="utf-8") as f:
+            f.write(entry)
 
     async def _log_to_obsidian(self, data):
         await self.modules['brain'].save_interaction(data)
