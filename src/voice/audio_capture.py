@@ -82,39 +82,56 @@ class SoundDeviceCapture(AudioCapture):
             logger.error(f"Erro na captura com sounddevice: {e}")
             return None
 
+    def _make_queue_stream(self, chunk_samples: int):
+        """Abre um InputStream contínuo e retorna (stream, queue)."""
+        import sounddevice as sd
+        import queue as q_mod
+        import numpy as np
+
+        audio_q: q_mod.Queue = q_mod.Queue()
+
+        def _cb(indata, frames, time_info, status):
+            audio_q.put(indata.copy())
+
+        stream = sd.InputStream(
+            samplerate=self.sample_rate,
+            channels=self.channels,
+            dtype='int16',
+            device=self.device,
+            blocksize=chunk_samples,
+            callback=_cb,
+        )
+        return stream, audio_q
+
     async def calibrate(self, duration: float = 1.0) -> float:
         """
-        Mede ruído ambiente e define energy_threshold automaticamente.
+        Mede ruído ambiente com InputStream e define energy_threshold.
         Deve ser chamado antes de start_continuous_capture.
         """
         try:
-            import sounddevice as sd_mod
             import numpy as np
 
-            samples = int(duration * self.sample_rate)
+            CHUNK = int(0.1 * self.sample_rate)
+            n_chunks = max(1, int(duration / 0.1))
             loop = asyncio.get_event_loop()
 
-            def record():
-                data = sd_mod.rec(
-                    samples,
-                    samplerate=self.sample_rate,
-                    channels=self.channels,
-                    dtype=np.int16,
-                    device=self.device,
-                )
-                sd_mod.wait()
-                return data
-
             print("Calibrando microfone (1s de silêncio)...")
-            data = await loop.run_in_executor(None, record)
-            ambient_rms = float(np.sqrt(np.mean(data.astype(np.float64) ** 2)))
+            stream, audio_q = self._make_queue_stream(CHUNK)
+            chunks = []
+            with stream:
+                for _ in range(n_chunks):
+                    chunk = await loop.run_in_executor(None, audio_q.get)
+                    chunks.append(chunk)
+
+            combined = np.concatenate(chunks, axis=0)
+            ambient_rms = float(np.sqrt(np.mean(combined.astype(np.float64) ** 2)))
             self.energy_threshold = max(ambient_rms * 2.5, 80.0)
             print(f"Threshold definido: {self.energy_threshold:.0f} RMS (ambiente: {ambient_rms:.0f})")
             return self.energy_threshold
 
         except Exception as e:
-            logger.warning(f"Calibração falhou ({e}), usando threshold padrão 200")
-            self.energy_threshold = 200.0
+            logger.warning(f"Calibração falhou ({e}), usando threshold padrão 150")
+            self.energy_threshold = 150.0
             return self.energy_threshold
 
     async def capture_until_silence(
@@ -124,57 +141,45 @@ class SoundDeviceCapture(AudioCapture):
     ) -> Optional[bytes]:
         """
         Captura áudio até detectar silêncio após fala (VAD por energia).
-        Retorna None se nenhuma fala for detectada no período.
+        Usa InputStream contínuo — sem abrir/fechar stream a cada chunk.
         """
         try:
-            import sounddevice as sd_mod
             import numpy as np
             import io
             import wave
 
-            CHUNK = 0.1  # 100ms por chunk
-            chunk_samples = int(CHUNK * self.sample_rate)
-            max_chunks = int(max_duration / CHUNK)
-            silence_needed = int(silence_duration / CHUNK)
-            min_speech_chunks = 3  # ignora sons < 300ms (cliques, ruídos)
+            CHUNK = int(0.1 * self.sample_rate)
+            max_chunks = int(max_duration / 0.1)
+            silence_needed = int(silence_duration / 0.1)
+            min_speech_chunks = 3
 
             loop = asyncio.get_event_loop()
             audio_chunks: list = []
             speech_chunks = 0
             silence_count = 0
 
-            def record_chunk():
-                data = sd_mod.rec(
-                    chunk_samples,
-                    samplerate=self.sample_rate,
-                    channels=self.channels,
-                    dtype=np.int16,
-                    device=self.device,
-                )
-                sd_mod.wait()
-                return data
-
-            for _ in range(max_chunks):
-                if not self.running:
-                    break
-
-                chunk = await loop.run_in_executor(None, record_chunk)
-                rms = float(np.sqrt(np.mean(chunk.astype(np.float64) ** 2)))
-                logger.debug(f"VAD RMS: {rms:.1f} / threshold: {self.energy_threshold:.1f}")
-
-                if rms >= self.energy_threshold:
-                    audio_chunks.append(chunk)
-                    speech_chunks += 1
-                    silence_count = 0
-                elif speech_chunks >= min_speech_chunks:
-                    audio_chunks.append(chunk)
-                    silence_count += 1
-                    if silence_count >= silence_needed:
+            stream, audio_q = self._make_queue_stream(CHUNK)
+            with stream:
+                for _ in range(max_chunks):
+                    if not self.running:
                         break
-                elif speech_chunks > 0:
-                    # fala muito curta — provavelmente ruído, descarta
-                    audio_chunks.clear()
-                    speech_chunks = 0
+
+                    chunk = await loop.run_in_executor(None, audio_q.get)
+                    rms = float(np.sqrt(np.mean(chunk.astype(np.float64) ** 2)))
+                    logger.debug(f"VAD RMS: {rms:.1f} / threshold: {self.energy_threshold:.1f}")
+
+                    if rms >= self.energy_threshold:
+                        audio_chunks.append(chunk)
+                        speech_chunks += 1
+                        silence_count = 0
+                    elif speech_chunks >= min_speech_chunks:
+                        audio_chunks.append(chunk)
+                        silence_count += 1
+                        if silence_count >= silence_needed:
+                            break
+                    elif speech_chunks > 0:
+                        audio_chunks.clear()
+                        speech_chunks = 0
 
             if not audio_chunks:
                 return None
@@ -189,11 +194,6 @@ class SoundDeviceCapture(AudioCapture):
             return buffer.getvalue()
 
         except asyncio.CancelledError:
-            try:
-                import sounddevice as sd_mod
-                sd_mod.stop()
-            except Exception:
-                pass
             raise
         except Exception as e:
             logger.error(f"Erro na captura VAD: {e}")
