@@ -31,10 +31,11 @@ class AudioCapture(ABC):
 class SoundDeviceCapture(AudioCapture):
     """Implementação usando sounddevice"""
 
-    def __init__(self, sample_rate: int = 16000, channels: int = 1, device: int = None):
+    def __init__(self, sample_rate: int = 16000, channels: int = 1, device: int = None, energy_threshold: float = 300.0):
         self.sample_rate = sample_rate
         self.channels = channels
         self.device = device
+        self.energy_threshold = energy_threshold
         self.running = False
 
         if device is not None:
@@ -81,13 +82,94 @@ class SoundDeviceCapture(AudioCapture):
             logger.error(f"Erro na captura com sounddevice: {e}")
             return None
 
+    async def capture_until_silence(
+        self,
+        silence_duration: float = 1.5,
+        max_duration: float = 30.0,
+    ) -> Optional[bytes]:
+        """
+        Captura áudio até detectar silêncio após fala (VAD por energia).
+        Retorna None se nenhuma fala for detectada no período.
+        """
+        try:
+            import sounddevice as sd_mod
+            import numpy as np
+            import io
+            import wave
+
+            CHUNK = 0.1  # 100ms por chunk
+            chunk_samples = int(CHUNK * self.sample_rate)
+            max_chunks = int(max_duration / CHUNK)
+            silence_needed = int(silence_duration / CHUNK)
+            min_speech_chunks = 3  # ignora sons < 300ms (cliques, ruídos)
+
+            loop = asyncio.get_event_loop()
+            audio_chunks: list = []
+            speech_chunks = 0
+            silence_count = 0
+
+            def record_chunk():
+                data = sd_mod.rec(
+                    chunk_samples,
+                    samplerate=self.sample_rate,
+                    channels=self.channels,
+                    dtype=np.int16,
+                    device=self.device,
+                )
+                sd_mod.wait()
+                return data
+
+            for _ in range(max_chunks):
+                if not self.running:
+                    break
+
+                chunk = await loop.run_in_executor(None, record_chunk)
+                rms = float(np.sqrt(np.mean(chunk.astype(np.float64) ** 2)))
+
+                if rms >= self.energy_threshold:
+                    audio_chunks.append(chunk)
+                    speech_chunks += 1
+                    silence_count = 0
+                elif speech_chunks >= min_speech_chunks:
+                    audio_chunks.append(chunk)
+                    silence_count += 1
+                    if silence_count >= silence_needed:
+                        break
+                elif speech_chunks > 0:
+                    # fala muito curta — provavelmente ruído, descarta
+                    audio_chunks.clear()
+                    speech_chunks = 0
+
+            if not audio_chunks:
+                return None
+
+            combined = np.concatenate(audio_chunks, axis=0)
+            buffer = io.BytesIO()
+            with wave.open(buffer, 'wb') as wav_file:
+                wav_file.setnchannels(self.channels)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(self.sample_rate)
+                wav_file.writeframes(combined.tobytes())
+            return buffer.getvalue()
+
+        except asyncio.CancelledError:
+            try:
+                import sounddevice as sd_mod
+                sd_mod.stop()
+            except Exception:
+                pass
+            raise
+        except Exception as e:
+            logger.error(f"Erro na captura VAD: {e}")
+            return None
+
     async def start_continuous_capture(self, callback):
-        """Captura contínua em loop"""
+        """Captura contínua usando VAD — grava até silêncio detectado"""
         self.running = True
 
         while self.running:
             try:
-                audio_bytes = await self.capture_audio(8.0)
+                audio_bytes = await self.capture_until_silence()
                 if audio_bytes and self.running:
                     await callback(audio_bytes)
 
@@ -95,7 +177,7 @@ class SoundDeviceCapture(AudioCapture):
                 break
             except Exception as e:
                 logger.error(f"Erro no loop de captura: {e}")
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.1)
 
     async def stop(self):
         """Para a captura"""
