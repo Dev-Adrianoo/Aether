@@ -120,7 +120,7 @@ class SoundDeviceCapture(AudioCapture):
             chunks = []
             with stream:
                 for _ in range(n_chunks):
-                    chunk = await loop.run_in_executor(None, audio_q.get)
+                    chunk = await loop.run_in_executor(None, lambda: audio_q.get(timeout=2.0))
                     chunks.append(chunk)
 
             combined = np.concatenate(chunks, axis=0)
@@ -164,7 +164,7 @@ class SoundDeviceCapture(AudioCapture):
                     if not self.running:
                         break
 
-                    chunk = await loop.run_in_executor(None, audio_q.get)
+                    chunk = await loop.run_in_executor(None, lambda: audio_q.get(timeout=2.0))
                     rms = float(np.sqrt(np.mean(chunk.astype(np.float64) ** 2)))
                     logger.debug(f"VAD RMS: {rms:.1f} / threshold: {self.energy_threshold:.1f}")
 
