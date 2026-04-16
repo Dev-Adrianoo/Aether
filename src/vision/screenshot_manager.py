@@ -28,10 +28,10 @@ class ScreenshotManager:
 
         logger.info("ScreenshotManager inicializado")
 
-    async def capture_and_analyze(self, reason="interval"):
+    async def capture_and_analyze(self, reason="interval", monitor_index: int = 1):
         """Captura e analisa screenshot"""
         try:
-            screenshot = await self._capture_screen()
+            screenshot = await self._capture_screen(monitor_index=monitor_index)
             analysis = await self._analyze_screenshot(screenshot)
 
             # Decidir se envia para contexto
@@ -54,15 +54,16 @@ class ScreenshotManager:
             logger.error(f"Erro ao capturar/analisar screenshot: {e}")
             return {"error": str(e), "has_errors": True}
 
-    async def _capture_screen(self):
+    async def _capture_screen(self, monitor_index: int = 1):
         """Captura screenshot da tela usando mss (implementação real)"""
         try:
             import mss
             import mss.tools
 
             with mss.mss() as sct:
-                # Capturar monitor primário
-                monitor = sct.monitors[1]  # Monitor 1 é o primário
+                n_monitors = len(sct.monitors) - 1  # monitors[0] é o combinado
+                idx = max(1, min(monitor_index, n_monitors))
+                monitor = sct.monitors[idx]
 
                 # Capturar screenshot
                 screenshot = sct.grab(monitor)
