@@ -87,7 +87,7 @@ class SoundDeviceCapture(AudioCapture):
 
         while self.running:
             try:
-                audio_bytes = await self.capture_audio(5.0)
+                audio_bytes = await self.capture_audio(8.0)
                 if audio_bytes and self.running:
                     await callback(audio_bytes)
 

@@ -113,8 +113,6 @@ class AetherSensorySystem:
     async def _handle_conversation(self, command_text: str, confidence: float):
         """Encaminha comando livre ao LLM e fala a resposta."""
         logger.info(f"Conversa: {command_text}")
-        await self.modules['speech'].speak("Pensando")
-
         response = await self.modules['integration'].ask_question(command_text)
 
         if response:
