@@ -184,7 +184,7 @@ Texto recebido: "{command_text}"
 
 Retorne APENAS o JSON."""
 
-        raw = await llm.ask_question(classification_prompt)
+        raw = await llm.classify(classification_prompt)
         if not raw:
             await speech.speak("Não entendi. Pode repetir?")
             return

@@ -176,6 +176,36 @@ class OpenClaudeClient:
             logger.warning(f"Erro no teste de conexão: {e}")
             return False
 
+    async def classify(self, prompt: str) -> Optional[str]:
+        """
+        Chamada stateless para classificação — sem histórico, sem system prompt longo.
+        Mais rápida que ask_question. Usada pelo LLM router.
+        """
+        if not self.session_active or not self.api_key:
+            return None
+        try:
+            import aiohttp
+            payload = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 80,
+                "temperature": 0.1
+            }
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.base_url}/chat/completions",
+                    json=payload,
+                    headers=self._headers(),
+                    timeout=aiohttp.ClientTimeout(total=15)
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data['choices'][0]['message']['content']
+                    return None
+        except Exception as e:
+            logger.error(f"Erro na classificação: {e}")
+            return None
+
     async def ask_question(self, question: str) -> Optional[str]:
         """
         Envia pergunta ao LLM e retorna resposta em texto.

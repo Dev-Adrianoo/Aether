@@ -137,7 +137,7 @@ class OpenClaudeSubprocess:
         script_file.write_text(
             f"Set-Location '{cwd}'\n"
             f"$prompt = Get-Content -Raw '{prompt_file}'\n"
-            f"node '{OPENCLAUDE_BIN}' --dangerously-skip-permissions -p $prompt\n",
+            f"node '{OPENCLAUDE_BIN}' --dangerously-skip-permissions --no-session-persistence -p $prompt\n",
             encoding="utf-8"
         )
 
