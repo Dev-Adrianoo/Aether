@@ -31,11 +31,11 @@ class AudioCapture(ABC):
 class SoundDeviceCapture(AudioCapture):
     """Implementação usando sounddevice"""
 
-    def __init__(self, sample_rate: int = 16000, channels: int = 1, device: int = None, energy_threshold: float = 300.0):
+    def __init__(self, sample_rate: int = 16000, channels: int = 1, device: int = None, energy_threshold: float = 0.0):
         self.sample_rate = sample_rate
         self.channels = channels
         self.device = device
-        self.energy_threshold = energy_threshold
+        self.energy_threshold = energy_threshold  # 0 = auto-calibrar no início
         self.running = False
 
         if device is not None:
@@ -82,6 +82,41 @@ class SoundDeviceCapture(AudioCapture):
             logger.error(f"Erro na captura com sounddevice: {e}")
             return None
 
+    async def calibrate(self, duration: float = 1.0) -> float:
+        """
+        Mede ruído ambiente e define energy_threshold automaticamente.
+        Deve ser chamado antes de start_continuous_capture.
+        """
+        try:
+            import sounddevice as sd_mod
+            import numpy as np
+
+            samples = int(duration * self.sample_rate)
+            loop = asyncio.get_event_loop()
+
+            def record():
+                data = sd_mod.rec(
+                    samples,
+                    samplerate=self.sample_rate,
+                    channels=self.channels,
+                    dtype=np.int16,
+                    device=self.device,
+                )
+                sd_mod.wait()
+                return data
+
+            logger.info("Calibrando microfone (mantenha silêncio)...")
+            data = await loop.run_in_executor(None, record)
+            ambient_rms = float(np.sqrt(np.mean(data.astype(np.float64) ** 2)))
+            self.energy_threshold = max(ambient_rms * 2.5, 80.0)
+            logger.info(f"Calibração: ambiente={ambient_rms:.1f} RMS → threshold={self.energy_threshold:.1f} RMS")
+            return self.energy_threshold
+
+        except Exception as e:
+            logger.warning(f"Calibração falhou ({e}), usando threshold padrão 200")
+            self.energy_threshold = 200.0
+            return self.energy_threshold
+
     async def capture_until_silence(
         self,
         silence_duration: float = 1.5,
@@ -125,6 +160,7 @@ class SoundDeviceCapture(AudioCapture):
 
                 chunk = await loop.run_in_executor(None, record_chunk)
                 rms = float(np.sqrt(np.mean(chunk.astype(np.float64) ** 2)))
+                logger.debug(f"VAD RMS: {rms:.1f} / threshold: {self.energy_threshold:.1f}")
 
                 if rms >= self.energy_threshold:
                     audio_chunks.append(chunk)
@@ -166,6 +202,9 @@ class SoundDeviceCapture(AudioCapture):
     async def start_continuous_capture(self, callback):
         """Captura contínua usando VAD — grava até silêncio detectado"""
         self.running = True
+
+        if self.energy_threshold == 0.0:
+            await self.calibrate()
 
         while self.running:
             try:
