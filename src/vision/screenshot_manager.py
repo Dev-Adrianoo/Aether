@@ -46,6 +46,8 @@ class ScreenshotManager:
             await self._save_screenshot(screenshot, analysis, reason)
 
             self.last_screenshot_time = time.time()
+            analysis['filepath'] = screenshot.get('filepath', '')
+            analysis['dimensions'] = screenshot.get('dimensions', (0, 0))
             return analysis
 
         except Exception as e:

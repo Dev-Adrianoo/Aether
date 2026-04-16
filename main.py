@@ -90,8 +90,13 @@ class AetherSensorySystem:
         hearing.register_command_handler("unknown", self._handle_conversation)
 
     async def _handle_screenshot_command(self, command_text: str, confidence: float):
-        await self.modules['vision'].capture_and_analyze(reason='voice_command')
-        await self.modules['speech'].speak("Capturando tela")
+        analysis = await self.modules['vision'].capture_and_analyze(reason='voice_command')
+        if analysis and analysis.get('filepath'):
+            path = analysis['filepath'].replace('\\', '/').split('/')[-1]
+            w, h = analysis.get('dimensions', (0, 0))
+            await self.modules['speech'].speak(f"Tela capturada. {w}x{h} pixels, salva em screenshots.")
+        else:
+            await self.modules['speech'].speak("Erro ao capturar tela.")
 
     async def _handle_action(self, command_text: str, confidence: float):
         from src.actions.registry import dispatch
