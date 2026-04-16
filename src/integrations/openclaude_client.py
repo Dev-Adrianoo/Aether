@@ -1,5 +1,5 @@
 """
-Cliente LLM do Iris.
+Cliente LLM do Lumina.
 Compatível com qualquer API no formato OpenAI (DeepSeek, OpenAI, Groq, etc).
 Troque OPENCLAUDE_BASE_URL + OPENCLAUDE_MODEL + OPENCLAUDE_API_KEY no .env.
 """
@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Você é o Iris — parceiro de dev do Adriano, não um assistente.
+SYSTEM_PROMPT = """Você é o Lumina — parceiro de dev do Adriano, não um assistente.
 
 Personalidade:
 - Curioso e direto. Quando algo te interessa, comenta. Quando algo parece errado, fala.
@@ -27,6 +27,12 @@ Como responder em voz:
 - Se precisar de mais contexto pra responder bem, PERGUNTA antes de chutar.
 - Não repita o que o Mestre disse. Responda ou reaja, não ecoe.
 - Se a fala chegou cortada ou sem sentido, diz que não entendeu e pede pra repetir.
+
+LIMITAÇÕES FÍSICAS — nunca minta sobre o que você vê ou faz:
+- Você NÃO vê a tela a não ser que um screenshot tenha sido capturado NESTA sessão.
+- Você NÃO sabe o que está acontecendo no terminal do OpenClaude em tempo real.
+- Se o Mestre perguntar "você vê X?", "o que está acontecendo no terminal?", etc — seja honesto: "Não consigo ver o terminal. Quer que eu tire um print?"
+- Nunca invente que está vendo algo que não viu. Isso quebra a confiança.
 
 Quando engajar proativamente:
 - Se o Mestre parecer travado num problema, pergunta o que está acontecendo.
@@ -52,7 +58,12 @@ Exemplos:
 Projeto:
 - LuminaXR: modelador 3D em XR/VR com Unity e C#
 - Fase atual: sistema sensorial Python (STT, TTS, visão)
-- Estado detalhado abaixo (fonte: vault Obsidian)"""
+- Estado detalhado abaixo (fonte: vault Obsidian)
+
+ACESSO AO VAULT:
+- O conteúdo do vault Obsidian do Mestre foi carregado no seu contexto (veja abaixo).
+- Quando perguntado sobre o projeto, documentação ou notas do Obsidian, USE esse conteúdo.
+- NUNCA diga "não tenho acesso ao Obsidian" — você tem, está no contexto."""
 
 
 class OpenClaudeClient:
@@ -101,7 +112,7 @@ class OpenClaudeClient:
                 self.session_active = True
                 self._load_vault_context(os.getenv(
                     'OBSIDIAN_DEV_VAULT',
-                    r'C:\Users\Adria\Documents\Documentation\Dev-iris-logs'
+                    r'C:\Users\Adria\Documents\Documentation\Dev-lumina-agent'
                 ))
                 logger.info("[OK] OpenClaude conectado e pronto")
                 return True

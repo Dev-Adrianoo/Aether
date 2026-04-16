@@ -1,171 +1,130 @@
-# Iris
+# Lumina
 
-A sensory development assistant that sees what you see, hears what you say, and acts in the digital world as an extension of your will.
+Assistente de desenvolvimento sensorial que vê o que você vê, ouve o que você diz e age no mundo digital como extensão da sua vontade.
 
-## What is Iris?
+## O que é a Lumina?
 
-Iris is a sensory development assistant created to overcome human limitations in software development. It integrates computer vision, speech recognition, and text-to-speech with OpenClaude to create a truly contextual programming partner.
+A Lumina é um assistente de desenvolvimento criado para superar as limitações humanas no desenvolvimento de software. Integra visão computacional, reconhecimento de fala e síntese de voz com OpenClaude para criar uma parceira de programação verdadeiramente contextual.
 
-Unlike traditional AI assistants that live in a text-only bubble, Iris sees your screen, hears your voice commands, and responds like a human partner.
+Diferente de assistentes tradicionais presos a bolhas de texto, a Lumina vê sua tela, ouve seus comandos de voz e responde como uma parceira humana.
 
-## Core Philosophy
+## Filosofia
 
-"An assistant that doesn't see your screen is blind. An assistant that doesn't hear your voice is deaf. An assistant that doesn't speak to you is mute. Iris sees, hears, and speaks - and therefore, acts."
+"Um assistente que não vê sua tela é cego. Um que não ouve sua voz é surdo. Um que não fala com você é mudo. A Lumina vê, ouve e fala — e portanto, age."
 
-## Architecture
+## Arquitetura
 
-### Sensory System
-- **Vision**: Real-time screen analysis with OpenCV and MSS
-- **Hearing**: Wake word "Iris" with SpeechRecognition and command processing  
-- **Speech**: Natural voice responses with edge-tts and pyttsx3
-- **Brain**: Obsidian vault for permanent memory and learning
-- **Action**: OpenClaude integration for full system control
+### Sistema Sensorial
+- **Visão**: Análise de tela em tempo real com OpenCV e MSS
+- **Audição**: Wake word "Lumina" com SpeechRecognition e processamento de comandos
+- **Fala**: Respostas por voz naturais com edge-tts e pyttsx3
+- **Memória**: Vault Obsidian para memória permanente e aprendizado
+- **Ação**: Integração com OpenClaude para controle total do sistema
 
-### Key Features
-- Intelligent screenshot capture (trigger-based and interval-based)
-- Context economy - only interrupts when necessary
-- Continuous learning through Obsidian documentation
-- Autonomous action with human direction
+### Funcionalidades
+- Captura de screenshot inteligente (por trigger de voz ou intervalo)
+- Economia de contexto — só interrompe quando necessário
+- Aprendizado contínuo via documentação no Obsidian
+- Ação autônoma com direção humana
+- Roteamento LLM — qualquer fala natural é entendida e encaminhada
 
-## Getting Started
+## Início Rápido
 
-### Prerequisites
+### Pré-requisitos
 - Python 3.9+
 - Windows/Linux/macOS
-- Microphone and speakers
-- OpenClaude running locally
+- Microfone e alto-falantes
+- OpenClaude rodando localmente
 
-### Installation
+### Instalação
 
 ```bash
-# Clone the repository
-git clone https://github.com/Dev-Adrianoo/Iris.git
-cd Iris
+git clone https://github.com/Dev-Adrianoo/lumina-agent.git
+cd lumina-agent
 
-# Create virtual environment
 python -m venv venv
+venv\Scripts\activate          # Windows
+# source venv/bin/activate     # Linux/Mac
 
-# Activate on Windows
-venv\Scripts\activate
-
-# Activate on Linux/Mac
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements_minimal.txt
+pip install -r requirements.txt
 ```
 
-### Basic Usage
+### Uso
 
 ```bash
-# Run Iris
+# Iniciar a Lumina
 python main.py
 
-# Test installation
+# Testar instalação
 python tests/run_simple_tests.py
 
-# Run full test suite (requires pytest)
+# Suite completa de testes (requer pytest)
 python -m pytest tests/ -v
 ```
 
-## How It Works
+## Como Funciona
 
-### Vision Module
-Captures screenshots intelligently based on:
-- Voice triggers: "screen", "print", "screenshot", "photo"
-- Time intervals: Every 60 seconds for continuous monitoring
-- Error detection: When visual errors are detected
+### Módulo de Visão
+Captura screenshots com base em:
+- Gatilhos de voz: "tela", "print", "screenshot", "foto"
+- Intervalo de tempo: a cada 60 segundos para monitoramento contínuo
+- Detecção de erros: quando erros visuais são detectados
 
-### Hearing Module
-Listens for the wake word "Iris" and processes natural commands:
-- "Iris, take a screenshot"
-- "Iris, show me the screen"
-- "Iris, capture this"
+### Módulo de Audição
+Aguarda a wake word "Lumina" e processa comandos naturais:
+- "Lumina, tira um print"
+- "Lumina, mostra a tela"
+- "Lumina, captura isso"
 
-### Integration
-- Screenshots and context sent to OpenClaude for analysis
-- Commands executed through OpenClaude's system control
-- All interactions logged to Obsidian for continuous learning
+### Integração
+- Screenshots e contexto enviados ao LLM para análise
+- Comandos executados pelo OpenClaude
+- Todas as interações registradas no Obsidian para aprendizado contínuo
 
-## Project Structure
+## Estrutura do Projeto
 
 ```
-Iris/
-├── src/                    # Source code
-│   ├── vision/            # Screenshot capture and analysis
-│   ├── hearing/           # Speech recognition and processing
-│   ├── speech/            # Text-to-speech synthesis
-│   ├── integration/       # OpenClaude communication
-│   └── brain/             # Obsidian memory system
-├── tests/                 # Test suite
-│   ├── unit/             # Unit tests
-│   ├── integration/      # Integration tests
-│   └── e2e/              # End-to-end tests
-├── config/               # Configuration files
-├── data/                 # Generated data (excluded from git)
-└── docs/                 # Documentation
+lumina-agent/
+├── src/
+│   ├── vision/         # Captura e análise de tela
+│   ├── voice/          # Reconhecimento de fala e TTS
+│   ├── integrations/   # Comunicação com LLM
+│   ├── actions/        # Ações no sistema
+│   └── brain/          # Sistema de memória Obsidian
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── manual/
+├── scripts/            # Scripts utilitários
+├── config.py           # Configuração central
+├── main.py             # Ponto de entrada
+└── data/               # Dados gerados (excluído do git)
 ```
 
-## Development
+## Desenvolvimento
 
-### Running Tests
+### Testes
 ```bash
-# Simple tests (no pytest required)
 python tests/run_simple_tests.py
-
-# Full test suite
-pip install pytest pytest-asyncio
 python -m pytest tests/ -v
 ```
 
-### Code Style
-- Follow PEP 8 conventions
-- Use type hints where appropriate
-- Write comprehensive docstrings
-- Maintain separation between documentation and code
+### Variáveis de Ambiente (`.env`)
+```
+LUMINA_WAKE_WORD=lumina
+OPENCLAUDE_API_KEY=sua_chave
+OBSIDIAN_VAULT_PATH=C:/caminho/para/vault
+TTS_ENGINE=edge-tts
+```
 
-## Documentation
+## Documentação
 
-Project documentation follows the LuminaXR pattern in Obsidian:
-- `01_Visao_de_Produto/` - Vision and philosophy
-- `02_Arquitetura_e_Design/` - Technical architecture
-- `03_Mecanicas/` - Features and mechanics
-- `Iris_Dev Log/` - Development logs and learnings
+Documentação do projeto no vault Obsidian em `Documentation/Dev-lumina-agent`.
 
-## Roadmap
+## Licença
 
-### Phase 1: Sensory Foundation
-- Basic screenshot capture with trigger words
-- Wake word detection with "Iris"
-- Simple voice commands
-- OpenClaude integration
-
-### Phase 2: Advanced Features
-- Computer vision analysis for error detection
-- Natural language command processing
-- Emotional speech synthesis
-- Learning system in Obsidian
-
-### Phase 3: Optimization
-- Machine learning for visual context
-- Adaptive speech recognition
-- Performance optimization
-- Dashboard and monitoring
-
-## Contributing
-
-This is a personal project by Adriano, but feedback and suggestions are welcome through GitHub issues.
-
-## License
-
-Private project - All rights reserved.
-
-## Acknowledgments
-
-- Built as a sensory extension for the LuminaXR project
-- Inspired by the need for truly contextual development assistants
-- Created to overcome the limitations of text-only AI tools
+Projeto privado — todos os direitos reservados.
 
 ---
 
-*Iris sees what you see, hears what you say, and acts as an extension of your will in the digital world.*
+*A Lumina vê o que você vê, ouve o que você diz e age como extensão da sua vontade no mundo digital.*

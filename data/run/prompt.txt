@@ -1,0 +1,3 @@
+Execute a tarefa diretamente sem pedir confirmação nem fazer perguntas. Não mostre design nem planejamento — só execute:
+
+abrir o terminal de comando (cmd)

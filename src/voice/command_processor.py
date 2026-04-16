@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class CommandProcessor:
     """Processa comandos de voz extraídos do texto"""
 
-    def __init__(self, wake_word: str = "iris", cooldown: float = 2.0, fuzzy_threshold: float = 0.82,
+    def __init__(self, wake_word: str = "lumina", cooldown: float = 2.0, fuzzy_threshold: float = 0.82,
                  conversation_timeout: float = 120.0):
         self.wake_word = wake_word.lower()
         self.cooldown = cooldown
@@ -44,7 +44,7 @@ class CommandProcessor:
 
         phonetic_variations = [
             word.lower(),
-            "íris",   # com acento
+            "lumina",
         ]
 
         for var in phonetic_variations:
@@ -180,10 +180,6 @@ class CommandProcessor:
         # Stop é crítico — não pode depender de API
         if any(p in text_lower for p in ["para tudo", "pare tudo", "encerra", "sai agora", "fechar tudo", "stop"]):
             return "stop"
-
-        # Terminal é rápido e local
-        if any(p in text_lower for p in ["terminal", "openclaude", "open claude"]):
-            return "openclaude"
 
         # Tudo mais: LLM decide
         return "llm_route"

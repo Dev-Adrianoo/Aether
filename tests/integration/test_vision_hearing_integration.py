@@ -40,7 +40,7 @@ class TestVisionHearingIntegration:
         mock_capture.return_value = {"summary": "Teste", "dimensions": (1920, 1080)}
 
         # Simular comando de voz com trigger word
-        command_text = "iris tira um print da tela"
+        command_text = "lumina tira um print da tela"
 
         # Processar como se tivesse vindo do VoiceListener
         await hearing_listener._process_audio_text(command_text)
@@ -58,16 +58,16 @@ class TestVisionHearingIntegration:
     async def test_command_classification_integration(self, hearing_listener):
         """Testa que comandos de screenshot são classificados corretamente"""
         test_commands = [
-            ("iris tira um print", "screenshot"),
-            ("iris captura a tela", "screenshot"),
-            ("iris mostra como está", "screenshot"),
-            ("iris olha aqui", "screenshot"),
-            ("iris tira uma foto", "screenshot"),
+            ("lumina tira um print", "screenshot"),
+            ("lumina captura a tela", "screenshot"),
+            ("lumina mostra como está", "screenshot"),
+            ("lumina olha aqui", "screenshot"),
+            ("lumina tira uma foto", "screenshot"),
         ]
 
         for command, expected_type in test_commands:
             # Extrair comando (tudo depois do wake word)
-            command_start = command.find("iris") + len("iris")
+            command_start = command.find("lumina") + len("lumina")
             command_text = command[command_start:].strip()
 
             # Classificar
@@ -130,7 +130,7 @@ class TestVisionHearingIntegration:
         hearing_listener.on_command_detected = mock_command_callback
 
         # Processar comando com wake word
-        await hearing_listener._process_audio_text("iris tira um print da tela por favor")
+        await hearing_listener._process_audio_text("lumina tira um print da tela por favor")
 
         # Verificar callbacks
         mock_wake_callback.assert_called_once()
@@ -189,13 +189,13 @@ if __name__ == "__main__":
         hearing = VoiceListener()
 
         print("1. Testando trigger word detection...")
-        command = "iris tira um print da tela"
+        command = "lumina tira um print da tela"
         has_trigger = await vision.check_trigger_words(command)
         assert has_trigger is True, "Trigger word não detectada"
         print("✅ OK")
 
         print("2. Testando classificação de comando...")
-        command_start = command.find("iris") + len("iris")
+        command_start = command.find("lumina") + len("lumina")
         command_text = command[command_start:].strip()
         command_type = hearing._classify_command(command_text)
         assert command_type == "screenshot", f"Tipo incorreto: {command_type}"

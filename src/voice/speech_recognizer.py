@@ -43,7 +43,21 @@ class SpeechRecognizer:
 
         return await self._recognize_google(audio_bytes)
 
+    @staticmethod
+    def _audio_rms(audio_bytes: bytes) -> float:
+        """Calcula RMS médio do payload PCM de um WAV (descarta header de 44 bytes)."""
+        import struct
+        import math
+        pcm = audio_bytes[44:]
+        if len(pcm) < 2:
+            return 0.0
+        samples = struct.unpack_from(f"<{len(pcm)//2}h", pcm)
+        return math.sqrt(sum(s * s for s in samples) / len(samples))
+
     async def _recognize_groq(self, audio_bytes: bytes) -> Optional[str]:
+        if self._audio_rms(audio_bytes) < 150:
+            logger.debug("RMS muito baixo — descartando antes do Groq")
+            return None
         try:
             # Groq espera um file-like com nome — usamos tupla (filename, bytes)
             result = await asyncio.to_thread(

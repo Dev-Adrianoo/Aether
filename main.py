@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Iris Sensory System — ponto de entrada principal.
+Lumina — ponto de entrada principal.
 Orquestra visão, voz e integração com LLM.
 """
 
@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Arquivo: tudo em DEBUG para diagnóstico
-_file_handler = logging.FileHandler('iris.log')
+_file_handler = logging.FileHandler('lumina.log')
 _file_handler.setLevel(logging.DEBUG)
 _file_handler.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s'))
 
@@ -23,13 +23,14 @@ logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handl
 logger = logging.getLogger(__name__)
 
 
-class IrisSensorySystem:
+class LuminaSensorySystem:
 
     def __init__(self):
         self.base_dir = Path(__file__).parent
         self.running = False
         self.modules = {}
-        self._last_recognized = ""  # última fala reconhecida — usada para detectar correções
+        self._last_recognized = ""
+        self._last_code_action = ""  # última tarefa enviada ao OpenClaude — contexto de sessão
         from src.voice.stt_corrector import STTCorrector
         self.stt_corrector = STTCorrector()
 
@@ -42,7 +43,7 @@ class IrisSensorySystem:
             from src.brain.obsidian_manager import ObsidianManager
             from config import config
 
-            print("Iris iniciando...")
+            print("Lumina iniciando...")
 
             from src.integrations.openclaude_subprocess import OpenClaudeSubprocess
             oc = OpenClaudeSubprocess()
@@ -93,7 +94,7 @@ class IrisSensorySystem:
             hearing.is_speaking = True
         try:
             await self.modules['speech'].speak(text)
-            await asyncio.sleep(0.8)  # buffer para eco do speaker dissipar
+            await asyncio.sleep(2.0)  # buffer para eco do speaker dissipar
         finally:
             if hearing:
                 hearing.is_speaking = False
@@ -179,18 +180,19 @@ Analise e retorne APENAS JSON válido com a intenção. Nenhum texto adicional.
 Tipos disponíveis:
 - screenshot: capturar tela → {{"type":"screenshot","monitor":1}}  (monitor: 1=esquerda/padrão, 2=direita/segundo)
 - action: abrir aplicativo → {{"type":"action","app":"youtube"}}  (apps válidos: youtube, spotify, vscode, unity, obsidian)
+- terminal: abrir ou fechar terminal → {{"type":"terminal","action":"open","shell":"powershell"}}  (action: open|close, shell: powershell|cmd)
 - task: anotar tarefa → {{"type":"task","text":"texto da tarefa"}}
-- code_agent: criar/editar arquivos, rodar comandos, navegar pastas → {{"type":"code_agent","prompt":"prompt técnico claro"}}
-- correction: usuário corrigindo transcrição errada → {{"type":"correction","wrong":"texto errado","right":"texto correto"}}
+- code_agent: criar/editar arquivos, executar scripts, rodar código, navegar pastas → {{"type":"code_agent","prompt":"prompt técnico claro"}}
+- correction: microfone transcreveu errado e usuário corrige O QUE ELE DISSE → {{"type":"correction","wrong":"texto errado","right":"texto correto"}}
 - conversation: conversa geral → {{"type":"conversation","response":"resposta em 1-2 frases coloquiais"}}
 
 Regras:
 - screenshot: qualquer pedido de capturar/fotografar/printar/foto da tela
-- action: abrir/fechar apps específicos por nome
-- code_agent: qualquer execução no sistema de arquivos ou terminal
-- correction: quando o usuário diz "não era X", "corrija, eu disse Y", "não, eu quis dizer Z" — use a fala anterior como "wrong": "{last}"
-- conversation: perguntas, comentários, qualquer coisa que não se encaixe acima
-- Para code_agent: o prompt deve ser técnico, claro, sem gírias
+- action: abrir apps por nome (youtube, spotify, vscode, unity, obsidian)
+- terminal: abrir/fechar cmd, powershell, opencloud, terminal — NÃO use code_agent para isso
+- code_agent: tarefas no sistema de arquivos ou execução de código — NÃO use para abrir terminal simples
+- correction: SOMENTE quando o usuário diz que o MICROFONE errou ("não, eu disse X", "você entendeu errado, falei X"). NÃO use quando reclama do comportamento da Lumina. Use a fala anterior como "wrong": "{last}"
+- conversation: perguntas, reclamações de comportamento, comentários, qualquer coisa que não se encaixe acima
 
 Texto recebido: "{command_text}"
 
@@ -220,6 +222,13 @@ Retorne APENAS o JSON."""
         elif intent_type == "action":
             app = intent.get("app", "")
             await self._handle_action(app, confidence)
+
+        elif intent_type == "terminal":
+            action = intent.get("action", "open")
+            shell = intent.get("shell", "powershell")
+            await self._handle_openclaude_terminal(
+                f"{'feche' if action == 'close' else 'abre'} {shell}", confidence
+            )
 
         elif intent_type == "task":
             text = intent.get("text", "")
@@ -256,14 +265,38 @@ Retorne APENAS o JSON."""
             await self._speak("OpenClaude nao esta disponivel.")
             return
 
-        iris_dir = str(Path(__file__).parent)
-        iris_keywords = ["iris", "voce mesmo", "em voce", "no seu codigo", "obsidian", "vault", "nova acao", "system_actions", "registry"]
-        is_self = any(kw in command_text.lower() for kw in iris_keywords)
-        working_dir = iris_dir if is_self else str(Path.home() / "Documents")
+        lumina_dir = str(Path(__file__).parent)
+        lumina_keywords = ["lumina", "voce mesmo", "em voce", "no seu codigo", "obsidian", "vault", "nova acao", "system_actions", "registry"]
+        is_self = any(kw in command_text.lower() for kw in lumina_keywords)
+        working_dir = lumina_dir if is_self else str(Path.home() / "Documents")
+
+        # Instrui OpenClaude a executar diretamente sem pedir confirmação
+        prompt = (
+            "Execute a tarefa diretamente sem pedir confirmação nem fazer perguntas. "
+            "Não mostre design nem planejamento — só execute:\n\n"
+            + command_text
+        )
 
         await self._speak("Entendido. Abrindo o terminal.")
-        oc.run_visible(prompt=command_text, working_dir=working_dir)
+        oc.run_visible(prompt=prompt, working_dir=working_dir)
+        self._last_code_action = command_text
         await self._speak("OpenClaude ta trabalhando. Acompanha no terminal.")
+
+        asyncio.create_task(self._monitor_openclaude_sentinel())
+
+    async def _monitor_openclaude_sentinel(self):
+        """Aguarda sentinel file do script e fala quando OpenClaude terminar."""
+        sentinel = Path(__file__).parent / "data" / "run" / "done.sentinel"
+        for _ in range(300):  # timeout: 5 min
+            await asyncio.sleep(1)
+            if sentinel.exists():
+                try:
+                    sentinel.unlink()
+                except OSError:
+                    pass
+                await self._speak("OpenClaude terminou. Confere o resultado no terminal.")
+                return
+        await self._speak("OpenClaude ainda ta rodando. Me chama quando terminar.")
 
     async def _handle_openclaude_terminal(self, command_text: str, confidence: float):
         oc = self.modules.get('openclaude')
@@ -271,10 +304,13 @@ Retorne APENAS o JSON."""
             await self._speak("OpenClaude não está disponível.")
             return
         text = command_text.lower()
-        fechar = any(w in text for w in ["esconde", "fecha", "oculta", "fechar", "esconder"])
+        fechar = any(w in text for w in ["esconde", "fecha", "feche", "oculta", "esconder"])
         if fechar:
-            oc.hide_terminal()
-            await self._speak("Fechando o terminal.")
+            closed = oc.hide_terminal()
+            if closed:
+                await self._speak("Terminal fechado.")
+            else:
+                await self._speak("Não tenho nenhum terminal aberto. Só consigo fechar terminais que eu mesma abri.")
             return
 
         # Detecta qual shell o usuário quer
@@ -283,14 +319,14 @@ Retorne APENAS o JSON."""
         elif any(w in text for w in ["powershell", "power shell", "posh"]):
             shell = "powershell"
         else:
-            # Não especificou — pergunta e abre powershell por padrão
-            await self._speak(
-                "Abrindo PowerShell. Se quiser cmd, só falar."
-            )
             shell = "powershell"
 
+        already_open = oc._terminal_proc and oc._terminal_proc.poll() is None
         oc.show_terminal(shell=shell)
-        await self._speak(f"Terminal do OpenClaude aberto.")
+        if already_open:
+            await self._speak("Terminal já está aberto.")
+        else:
+            await self._speak(f"Terminal aberto em {shell}.")
 
     async def _handle_action(self, command_text: str, confidence: float):
         from src.actions.registry import dispatch
@@ -311,13 +347,19 @@ Retorne APENAS o JSON."""
 
     async def _handle_help_command(self, command_text: str, confidence: float):
         await self._speak(
-            "Diga Iris seguido do seu comando. "
+            "Diga Lumina seguido do seu comando. "
             "Posso capturar a tela, responder perguntas ou verificar meu status."
         )
 
     async def _handle_conversation(self, command_text: str, confidence: float):
         logger.debug(f"Conversa: {command_text}")
-        response = await self.modules['integration'].ask_question(command_text)
+        question = command_text
+        if self._last_code_action:
+            question = (
+                f"[Contexto: acabei de enviar ao OpenClaude a tarefa: '{self._last_code_action}'. "
+                f"O terminal está aberto e pode ainda estar executando.]\n\n{command_text}"
+            )
+        response = await self.modules['integration'].ask_question(question)
         if not response:
             await self._speak("Não consegui responder agora. Pode repetir?")
             return
@@ -344,7 +386,7 @@ Retorne APENAS o JSON."""
 
     async def _save_correction_to_vault(self, wrong: str, right: str):
         """Registra correção de STT no vault Obsidian."""
-        vault = Path(r"C:\Users\Adria\Documents\Documentation\Dev-iris-logs")
+        vault = Path(r"C:\Users\Adria\Documents\Documentation\Dev-lumina-agent")
         corrections_note = vault / "04_APRENDIZADOS" / "LEARN_STT_corrections.md"
         from datetime import datetime
         entry = f"- `{wrong}` → `{right}`  <!-- {datetime.now().strftime('%Y-%m-%d %H:%M')} -->\n"
@@ -362,7 +404,7 @@ Retorne APENAS o JSON."""
             return
 
         self.running = True
-        print("Pronto. Diga 'Iris' para ativar.\n")
+        print("Pronto. Diga 'Lumina' para ativar.\n")
 
         try:
             await asyncio.gather(
@@ -383,7 +425,7 @@ Retorne APENAS o JSON."""
                 await module.stop()
             elif hasattr(module, 'shutdown'):
                 await module.shutdown()
-        print("\nIris encerrado.")
+        print("\nLumina encerrada.")
 
     async def _save_session_summary(self):
         try:
@@ -405,8 +447,8 @@ Retorne APENAS o JSON."""
 
 
 async def main():
-    iris = IrisSensorySystem()
-    await iris.run()
+    lumina = LuminaSensorySystem()
+    await lumina.run()
 
 
 if __name__ == "__main__":

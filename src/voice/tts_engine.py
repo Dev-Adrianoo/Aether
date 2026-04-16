@@ -1,5 +1,5 @@
 """
-Sistema de Text-to-Speech (TTS) do Iris
+Sistema de Text-to-Speech (TTS) do Lumina
 Suporta pyttsx3 (offline) e edge-tts (online)
 Usa configuração do config.py
 """
@@ -108,7 +108,7 @@ class TTSEngine:
                 else:
                     logger.warning("Nenhum áudio gerado pelo edge-tts")
 
-                print(f"🔊 Iris diz: {text}")
+                print(f"🔊 Lumina diz: {text}")
 
             elif self.engine:
                 # pyttsx3 (síncrono)
@@ -120,7 +120,7 @@ class TTSEngine:
                     self.engine.iterate()
                     self.engine.endLoop()
 
-                print(f"🔊 Iris diz: {text}")
+                print(f"🔊 Lumina diz: {text}")
             else:
                 # Fallback: apenas imprimir
                 print(f"🔊 [TTS] {text}")
@@ -132,7 +132,7 @@ class TTSEngine:
     async def test_voice(self, test_count: int = 2):
         """Testa a voz do sistema múltiplas vezes para verificar bloqueio"""
         test_phrases = [
-            "Olá, eu sou o Iris.",
+            "Olá, eu sou a Lumina.",
             "Sistema de visão e audição ativo.",
             "Pronto para ajudar no desenvolvimento.",
             "Teste de voz concluído com sucesso."

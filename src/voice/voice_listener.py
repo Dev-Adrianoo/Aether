@@ -36,7 +36,7 @@ class VoiceListener:
             sample_rate=_rate,
         )
         self.speech_recognizer = speech_recognizer or SpeechRecognizer(language="pt-BR")
-        self.command_processor = command_processor or CommandProcessor(wake_word="iris")
+        self.command_processor = command_processor or CommandProcessor(wake_word="lumina")
 
         # Estado
         self.running = False
@@ -57,12 +57,12 @@ class VoiceListener:
 
         if self._print:
             print("\n" + "="*50)
-            print("🎤 IRIS VOICE SYSTEM")
+            print("🎤 LUMINA VOICE SYSTEM")
             print("="*50)
-            print("Diga 'Iris' seguido de comando:")
-            print("  • 'Iris, captura tela'")
-            print("  • 'Iris, mostra print'")
-            print("  • 'Iris, para'")
+            print("Diga 'Lumina' seguido de comando:")
+            print("  • 'Lumina, captura tela'")
+            print("  • 'Lumina, mostra print'")
+            print("  • 'Lumina, para'")
             print("="*50 + "\n")
 
         # Iniciar captura contínua

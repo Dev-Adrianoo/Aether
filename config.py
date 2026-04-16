@@ -1,5 +1,5 @@
 """
-Sistema de configuração do Iris Sensory System
+Sistema de configuração do Lumina
 Usa variáveis de ambiente com fallback para valores padrão
 """
 
@@ -53,8 +53,8 @@ class LoggingConfig:
     log_file: Path
     to_console: bool
 
-class IrisConfig:
-    """Configuração principal do sistema Iris"""
+class LuminaConfig:
+    """Configuração principal do Lumina"""
 
     def __init__(self, env_file: Optional[str] = None):
         """Inicializa configuração, carregando de .env se disponível"""
@@ -101,11 +101,11 @@ class IrisConfig:
     def _load_audio_config(self) -> AudioConfig:
         device_raw = os.getenv('AUDIO_DEVICE_INDEX')
         return AudioConfig(
-            wake_word=self._get_env('IRIS_WAKE_WORD', 'iris'),
+            wake_word=self._get_env('LUMINA_WAKE_WORD', 'lumina'),
             sample_rate=self._get_env_int('AUDIO_SAMPLE_RATE', 16000),
-            channels=self._get_env_int('IRIS_AUDIO_CHANNELS', 1),
-            phrase_time_limit=self._get_env_int('IRIS_PHRASE_TIME_LIMIT', 15),
-            energy_threshold=self._get_env_int('IRIS_ENERGY_THRESHOLD', 4000),
+            channels=self._get_env_int('LUMINA_AUDIO_CHANNELS', 1),
+            phrase_time_limit=self._get_env_int('LUMINA_PHRASE_TIME_LIMIT', 15),
+            energy_threshold=self._get_env_int('LUMINA_ENERGY_THRESHOLD', 4000),
             pause_threshold=0.8,
             device_index=int(device_raw) if device_raw is not None else 13
         )
@@ -121,7 +121,7 @@ class IrisConfig:
         vault_path = Path(self._get_env('OBSIDIAN_VAULT_PATH', 'C:/Users/Adria/Documents/Obsidian Vault'))
         return ObsidianConfig(
             vault_path=vault_path,
-            log_folder=self._get_env('OBSIDIAN_LOG_FOLDER', 'Iris_Logs')
+            log_folder=self._get_env('OBSIDIAN_LOG_FOLDER', 'Lumina_Logs')
         )
 
     def _load_tts_config(self) -> TTSConfig:
@@ -142,7 +142,7 @@ class IrisConfig:
         )
 
     def _load_logging_config(self) -> LoggingConfig:
-        log_file = Path(self._get_env('LOG_FILE', 'iris.log'))
+        log_file = Path(self._get_env('LOG_FILE', 'lumina.log'))
         return LoggingConfig(
             level=self._get_env('LOG_LEVEL', 'INFO'),
             log_file=log_file,
@@ -171,7 +171,7 @@ class IrisConfig:
     def print_summary(self):
         """Exibe resumo das configurações"""
         print("\n" + "="*50)
-        print("CONFIGURAÇÃO IRIS - RESUMO")
+        print("CONFIGURAÇÃO LUMINA - RESUMO")
         print("="*50)
 
         print(f"\n🎤 Áudio:")
@@ -200,4 +200,4 @@ class IrisConfig:
         print(f"   Arquivo: {self.logging.log_file}")
         print("="*50 + "\n")
 
-config = IrisConfig()
+config = LuminaConfig()

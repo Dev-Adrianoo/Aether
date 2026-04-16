@@ -160,7 +160,7 @@ class TestTTSEngine:
         phrases = [call.args[0] for call in tts.speak.call_args_list]
         # Verificar que as 4 frases aparecem (podem aparecer múltiplas vezes)
         expected_phrases = [
-            "Olá, eu sou o Iris.",
+            "Olá, eu sou a Lumina.",
             "Sistema de visão e audição ativo.",
             "Pronto para ajudar no desenvolvimento.",
             "Teste de voz concluído com sucesso."

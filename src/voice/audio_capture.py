@@ -125,7 +125,7 @@ class SoundDeviceCapture(AudioCapture):
 
             combined = np.concatenate(chunks, axis=0)
             ambient_rms = float(np.sqrt(np.mean(combined.astype(np.float64) ** 2)))
-            self.energy_threshold = max(ambient_rms * 2.5, 80.0)
+            self.energy_threshold = max(ambient_rms * 4, 200.0)
             print(f"Threshold definido: {self.energy_threshold:.0f} RMS (ambiente: {ambient_rms:.0f})")
             return self.energy_threshold
 

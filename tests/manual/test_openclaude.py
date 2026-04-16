@@ -82,7 +82,7 @@ async def main():
         print("✅ OPENCLAUDE PRONTO PARA CONVERSA")
         print("\nPara usar no sistema:")
         print("1. Execute: python main.py")
-        print("2. Diga: 'Iris, qual é a capital da França?'")
+        print("2. Diga: 'Lumina, qual é a capital da França?'")
         print("3. Sistema responderá por voz")
     else:
         print("❌ PROBLEMAS COM OPENCLAUDE")

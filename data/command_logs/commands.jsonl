@@ -98,3 +98,30 @@
 {"timestamp": "2026-04-16T19:10:50.183334", "command": "e aí", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
 {"timestamp": "2026-04-16T19:11:19.459040", "command": ", abre minha unit pra mim, por favor.", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
 {"timestamp": "2026-04-16T19:11:32.926274", "command": "e aí", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:42:06.936161", "command": "está aí.", "type": "llm_route", "confidence": 0.5, "wake_word": "iris"}
+{"timestamp": "2026-04-16T19:42:19.616602", "command": "e listei.", "type": "llm_route", "confidence": 0.5, "wake_word": "iris"}
+{"timestamp": "2026-04-16T20:01:25.674007", "command": "a está aí.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:01:49.087190", "command": "a, abra meu terminal.", "type": "openclaude", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:02:27.772146", "command": "até a pasta documentos e, por favor, crie um arquivo index.html. dentro desse arquivo, crie uma estrutura html básica. e dentro dessa estrutura básica, eu gostaria que você criasse um h1 com a palavra hello world. e logo depois disso tudo, abre ela para mim no navegador.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:05:33.968256", "command": ", você abriu o open cloud, porém você me fez uma pergunta e eu gostaria que você fizesse. você consegue ver o open cloud agora?", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:05:51.470672", "command": "sabe o que você escreveu ali?", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:06:16.632150", "command": "este design está correto, mas e aí? por que você não abriu? eu te pedi pra abrir, criar-se e abrir-se. por que você não fez isso?", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:09:59.941789", "command": ", está aí.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:10:14.558519", "command": "abra o terminal por favor com opencloud.", "type": "openclaude", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:10:38.059581", "command": "feche esse terminal do opencloud e abre, por favor, o cmd.", "type": "openclaude", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:10:52.199366", "command": "eu pedi pra você fechar, não abrir.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:14:14.542561", "command": "tai.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:14:26.031973", "command": "a, está aí.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:14:41.691330", "command": ", consegue abrir meu terminal no cmd?", "type": "openclaude", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:14:55.346604", "command": "? lumina, você consegue fechar meu terminal agora em cmd?", "type": "openclaude", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:15:12.671221", "command": "você vê que tem um opencloud aberto, correto? existem três terminais. eu quero que você feche o terminal do opencloud.", "type": "openclaude", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:15:26.722942", "command": "não fechou nenhum terminal. você só é capaz de fechar o terminal que você abriu? me responda com sinceridade.", "type": "openclaude", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:15:49.351309", "command": "abra o cmd pra mim, por favor, de novo.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:16:11.611826", "command": "trabalhando em q, eu não pedi pra você fazer nada.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:26:42.831905", "command": "a está aí.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:26:57.483720", "command": "abra o meu terminal cmd.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:27:17.284507", "command": ". lumina, agora, por favor, abra o open cloud nesse terminal cmd.", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:27:35.173336", "command": "você não consegue fazer nada com o terminal aberto, sendo que se você abrir o terminal, você não consegue simplesmente digitar opencloud aí?", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:31:19.694680", "command": "xr que tem dentro do seu obsidian?", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:31:37.901889", "command": "pra mim, porra!", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}
+{"timestamp": "2026-04-16T20:31:55.909357", "command": "ele é muito burro", "type": "llm_route", "confidence": 0.5, "wake_word": "lumina"}

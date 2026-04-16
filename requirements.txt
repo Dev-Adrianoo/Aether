@@ -1,4 +1,4 @@
-# Iris — dependências de produção
+# Lumina — dependências de produção
 
 # Áudio (captura e reconhecimento)
 sounddevice>=0.4.6

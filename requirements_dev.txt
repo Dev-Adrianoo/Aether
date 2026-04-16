@@ -1,4 +1,4 @@
-# Iris — dependências de desenvolvimento
+# Lumina — dependências de desenvolvimento
 -r requirements.txt
 
 pytest>=7.4.0
