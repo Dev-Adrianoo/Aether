@@ -76,12 +76,21 @@ class AetherSensorySystem:
         hearing.register_command_handler("stop", self._handle_stop_command)
         hearing.register_command_handler("help", self._handle_help_command)
         hearing.register_command_handler("status", self._handle_status_command)
+        hearing.register_command_handler("action", self._handle_action)
         hearing.register_command_handler("conversation", self._handle_conversation)
         hearing.register_command_handler("unknown", self._handle_conversation)
 
     async def _handle_screenshot_command(self, command_text: str, confidence: float):
         await self.modules['vision'].capture_and_analyze(reason='voice_command')
         await self.modules['speech'].speak("Capturando tela")
+
+    async def _handle_action(self, command_text: str, confidence: float):
+        from src.actions.registry import dispatch
+        feedback = dispatch(command_text)
+        if feedback:
+            await self.modules['speech'].speak(feedback)
+        else:
+            await self._handle_conversation(command_text, confidence)
 
     async def _handle_stop_command(self, command_text: str, confidence: float):
         await self.modules['speech'].speak("Encerrando")

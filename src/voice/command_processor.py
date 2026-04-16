@@ -149,11 +149,11 @@ class CommandProcessor:
         text_lower = text.lower()
 
         command_patterns = {
-            "screenshot": ["tela", "print", "screenshot", "foto", "captura", "mostra", "olha", "tira", "tire"],
-            "stop": ["para", "pare", "stop", "encerra", "sai", "fecha"],
-            "help": ["ajuda", "help", "comandos", "o que", "pode"],
-            "status": ["status", "como", "tá", "funciona", "tudo"],
-            "conversation": ["escuta", "escutando", "responde", "responda", "fala", "conversa", "pergunta"]
+            "screenshot": ["tela", "print", "screenshot", "foto", "captura", "mostra a tela", "tira print"],
+            "stop": ["para tudo", "pare tudo", "encerra", "sai agora", "fechar tudo", "stop"],
+            "help": ["ajuda", "help", "comandos"],
+            "status": ["status"],
+            "action": ["abre", "abrir", "fecha o", "fechar o", "toca", "play", "pause", "inicia", "iniciar", "lança", "lançar"],
         }
 
         for command_type, patterns in command_patterns.items():
