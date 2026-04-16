@@ -145,12 +145,26 @@ class AetherSensorySystem:
             await self.modules['speech'].speak("OpenClaude não está disponível.")
             return
         text = command_text.lower()
-        if any(w in text for w in ["mostra", "abre", "exibe", "abrir"]):
-            oc.show_terminal()
-            await self.modules['speech'].speak("Abrindo OpenClaude.")
-        elif any(w in text for w in ["esconde", "fecha", "oculta", "fechar"]):
+        fechar = any(w in text for w in ["esconde", "fecha", "oculta", "fechar", "esconder"])
+        if fechar:
             oc.hide_terminal()
-            await self.modules['speech'].speak("Fechando OpenClaude.")
+            await self.modules['speech'].speak("Fechando o terminal.")
+            return
+
+        # Detecta qual shell o usuário quer
+        if "cmd" in text:
+            shell = "cmd"
+        elif any(w in text for w in ["powershell", "power shell", "posh"]):
+            shell = "powershell"
+        else:
+            # Não especificou — pergunta e abre powershell por padrão
+            await self.modules['speech'].speak(
+                "Abrindo PowerShell. Se quiser cmd, só falar."
+            )
+            shell = "powershell"
+
+        oc.show_terminal(shell=shell)
+        await self.modules['speech'].speak(f"Terminal do OpenClaude aberto.")
 
     async def _handle_action(self, command_text: str, confidence: float):
         from src.actions.registry import dispatch

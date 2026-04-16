@@ -116,15 +116,22 @@ class OpenClaudeSubprocess:
 
         return ""
 
-    def show_terminal(self):
-        """Abre o OpenClaude em uma janela de terminal visível."""
+    def show_terminal(self, shell: str = "powershell"):
+        """
+        Abre o OpenClaude em uma janela de terminal visível.
+        shell: 'powershell' (padrão) ou 'cmd'
+        """
         if self._terminal_proc and self._terminal_proc.poll() is None:
             logger.info("Terminal OpenClaude já está aberto")
             return
 
-        cmd = f'start cmd /k "node {OPENCLAUDE_BIN}"'
+        if shell == "cmd":
+            cmd = f'start cmd /k "node {OPENCLAUDE_BIN}"'
+        else:
+            cmd = f'start powershell -NoExit -Command "node \'{OPENCLAUDE_BIN}\'"'
+
         self._terminal_proc = subprocess.Popen(cmd, shell=True)
-        logger.info("Terminal OpenClaude aberto")
+        logger.info(f"Terminal OpenClaude aberto ({shell})")
 
     def hide_terminal(self):
         """Fecha a janela do terminal visível, se aberta."""

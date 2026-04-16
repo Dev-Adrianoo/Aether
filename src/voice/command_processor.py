@@ -173,13 +173,14 @@ class CommandProcessor:
         text_lower = text.lower()
 
         command_patterns = {
-            "screenshot": ["tela", "print", "screenshot", "foto", "captura", "mostra a tela", "tira print"],
+            # openclaude ANTES de action e screenshot — evita conflito com "abre" e "tela"
+            "openclaude": ["terminal", "openclaude", "open claude"],
+            "screenshot": ["captura tela", "tira print", "tira screenshot", "screenshot", "mostra a tela", "print da tela", "captura a tela"],
             "stop": ["para tudo", "pare tudo", "encerra", "sai agora", "fechar tudo", "stop"],
             "help": ["ajuda", "help", "comandos"],
             "status": ["status"],
             "action": ["abre", "abrir", "fecha o", "fechar o", "toca", "play", "pause", "inicia", "iniciar", "lança", "lançar"],
             "task": ["anota", "anote", "tarefa", "lembra", "lembre", "adiciona", "adicione", "registra", "registre"],
-            "openclaude": ["mostra o terminal", "abre o terminal", "esconde o terminal", "fecha o terminal", "mostra openclaude", "abre openclaude", "fecha openclaude"],
         }
 
         for command_type, patterns in command_patterns.items():
