@@ -176,7 +176,7 @@ class CommandProcessor:
             # code_agent e openclaude ANTES de action/screenshot — evita conflitos
             "code_agent": ["código", "codigo", "programa", "cria arquivo", "desenvolve", "refatora", "implementa", "escreve o código", "faz o código"],
             "openclaude": ["terminal", "openclaude", "open claude"],
-            "screenshot": ["captura tela", "tira print", "tira screenshot", "screenshot", "mostra a tela", "print da tela", "captura a tela"],
+            "screenshot": ["captura tela", "tira print", "tirasse print", "tira screenshot", "screenshot", "mostra a tela", "print da tela", "captura a tela", "foto da tela", "foto da minha tela", "printscreen", "print screen"],
             "stop": ["para tudo", "pare tudo", "encerra", "sai agora", "fechar tudo", "stop"],
             "help": ["ajuda", "help", "comandos"],
             "status": ["status"],
