@@ -98,10 +98,10 @@ async def test_integration():
         hearing = VoiceListener()
 
         # Comando de exemplo
-        command = "aether tira um print da tela"
+        command = "iris tira um print da tela"
 
         print("1. Extraindo comando do wake word...")
-        command_start = command.find("aether") + len("aether")
+        command_start = command.find("iris") + len("iris")
         command_text = command[command_start:].strip()
         print(f"   Comando: '{command_text}'")
 
@@ -132,7 +132,7 @@ async def test_integration():
 
 async def main():
     """Função principal"""
-    print("🧠 AETHER - TESTES SIMPLIFICADOS")
+    print("🧠 IRIS - TESTES SIMPLIFICADOS")
     print("=" * 50)
 
     results = []
@@ -158,7 +158,7 @@ async def main():
 
     if all_passed:
         print("\n🎉 TODOS OS TESTES PASSARAM!")
-        print("O Aether está pronto para a próxima fase.")
+        print("O Iris está pronto para a próxima fase.")
         print("\nPróximos passos:")
         print("1. Instalar pytest: pip install pytest pytest-asyncio")
         print("2. Executar testes completos: python -m pytest tests/ -v")

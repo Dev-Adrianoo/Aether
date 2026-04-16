@@ -63,7 +63,7 @@ def open_unity():
 
 
 def open_obsidian():
-    vault_path = r"C:\Users\Adria\Documents\Documentation\Dev-Aether-logs"
+    vault_path = r"C:\Users\Adria\Documents\Documentation\Dev-iris-logs"
     candidates = [
         Path(r"C:\Users\Adria\AppData\Local\Programs\Obsidian\Obsidian.exe"),
         Path(r"C:\Users\Adria\AppData\Local\Obsidian\Obsidian.exe"),

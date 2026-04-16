@@ -1,5 +1,5 @@
 """
-Sistema de configuração do Aether Sensory System
+Sistema de configuração do Iris Sensory System
 Usa variáveis de ambiente com fallback para valores padrão
 """
 
@@ -53,8 +53,8 @@ class LoggingConfig:
     log_file: Path
     to_console: bool
 
-class AetherConfig:
-    """Configuração principal do sistema Aether"""
+class IrisConfig:
+    """Configuração principal do sistema Iris"""
 
     def __init__(self, env_file: Optional[str] = None):
         """Inicializa configuração, carregando de .env se disponível"""
@@ -101,11 +101,11 @@ class AetherConfig:
     def _load_audio_config(self) -> AudioConfig:
         device_raw = os.getenv('AUDIO_DEVICE_INDEX')
         return AudioConfig(
-            wake_word=self._get_env('AETHER_WAKE_WORD', 'aether'),
+            wake_word=self._get_env('IRIS_WAKE_WORD', 'iris'),
             sample_rate=self._get_env_int('AUDIO_SAMPLE_RATE', 16000),
-            channels=self._get_env_int('AETHER_AUDIO_CHANNELS', 1),
-            phrase_time_limit=self._get_env_int('AETHER_PHRASE_TIME_LIMIT', 15),
-            energy_threshold=self._get_env_int('AETHER_ENERGY_THRESHOLD', 4000),
+            channels=self._get_env_int('IRIS_AUDIO_CHANNELS', 1),
+            phrase_time_limit=self._get_env_int('IRIS_PHRASE_TIME_LIMIT', 15),
+            energy_threshold=self._get_env_int('IRIS_ENERGY_THRESHOLD', 4000),
             pause_threshold=0.8,
             device_index=int(device_raw) if device_raw is not None else 13
         )
@@ -121,7 +121,7 @@ class AetherConfig:
         vault_path = Path(self._get_env('OBSIDIAN_VAULT_PATH', 'C:/Users/Adria/Documents/Obsidian Vault'))
         return ObsidianConfig(
             vault_path=vault_path,
-            log_folder=self._get_env('OBSIDIAN_LOG_FOLDER', 'Aether_Logs')
+            log_folder=self._get_env('OBSIDIAN_LOG_FOLDER', 'Iris_Logs')
         )
 
     def _load_tts_config(self) -> TTSConfig:
@@ -142,7 +142,7 @@ class AetherConfig:
         )
 
     def _load_logging_config(self) -> LoggingConfig:
-        log_file = Path(self._get_env('LOG_FILE', 'aether.log'))
+        log_file = Path(self._get_env('LOG_FILE', 'iris.log'))
         return LoggingConfig(
             level=self._get_env('LOG_LEVEL', 'INFO'),
             log_file=log_file,
@@ -171,7 +171,7 @@ class AetherConfig:
     def print_summary(self):
         """Exibe resumo das configurações"""
         print("\n" + "="*50)
-        print("CONFIGURAÇÃO AETHER - RESUMO")
+        print("CONFIGURAÇÃO IRIS - RESUMO")
         print("="*50)
 
         print(f"\n🎤 Áudio:")
@@ -200,4 +200,4 @@ class AetherConfig:
         print(f"   Arquivo: {self.logging.log_file}")
         print("="*50 + "\n")
 
-config = AetherConfig()
+config = IrisConfig()

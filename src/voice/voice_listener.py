@@ -36,10 +36,11 @@ class VoiceListener:
             sample_rate=_rate,
         )
         self.speech_recognizer = speech_recognizer or SpeechRecognizer(language="pt-BR")
-        self.command_processor = command_processor or CommandProcessor(wake_word="aether")
+        self.command_processor = command_processor or CommandProcessor(wake_word="iris")
 
         # Estado
         self.running = False
+        self.is_speaking = False  # mudo durante TTS para evitar loopback
         self.config = config or {}
 
         # Feedback
@@ -56,12 +57,12 @@ class VoiceListener:
 
         if self._print:
             print("\n" + "="*50)
-            print("🎤 AETHER VOICE SYSTEM")
+            print("🎤 IRIS VOICE SYSTEM")
             print("="*50)
-            print("Diga 'Aether' seguido de comando:")
-            print("  • 'Aether, captura tela'")
-            print("  • 'Aether, mostra print'")
-            print("  • 'Aether, para'")
+            print("Diga 'Iris' seguido de comando:")
+            print("  • 'Iris, captura tela'")
+            print("  • 'Iris, mostra print'")
+            print("  • 'Iris, para'")
             print("="*50 + "\n")
 
         # Iniciar captura contínua
@@ -69,7 +70,7 @@ class VoiceListener:
 
     async def _process_audio_callback(self, audio_bytes: bytes):
         """Callback chamado quando áudio é capturado"""
-        if not self.running:
+        if not self.running or self.is_speaking:
             return
 
         try:

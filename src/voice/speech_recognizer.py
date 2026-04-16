@@ -1,88 +1,103 @@
 """
 Reconhecimento de fala independente da captura de áudio.
-Single Responsibility Principle.
+Groq Whisper (primário, rápido e preciso) + Google Speech (fallback).
 """
 
 import asyncio
 import logging
+import os
+import tempfile
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+
 class SpeechRecognizer:
-    """Reconhece fala a partir de áudio"""
 
     def __init__(self, language: str = "pt-BR"):
         self.language = language
-        self._recognizer = None
+        self._groq_client = None
+        self._sr_recognizer = None
+        self._groq_available = False
+        self._init_groq()
+
+    def _init_groq(self):
+        try:
+            from groq import Groq
+            api_key = os.getenv("GROQ_API_KEY", "")
+            if api_key:
+                self._groq_client = Groq(api_key=api_key)
+                self._groq_available = True
+                logger.info("Groq Whisper disponível")
+            else:
+                logger.warning("GROQ_API_KEY não configurada — usando Google Speech")
+        except ImportError:
+            logger.warning("groq não instalado — usando Google Speech. Instale: pip install groq")
 
     async def recognize(self, audio_bytes: bytes) -> Optional[str]:
-        """Reconhece fala a partir de bytes de áudio"""
+        if self._groq_available:
+            result = await self._recognize_groq(audio_bytes)
+            if result:
+                return result
+            logger.debug("Groq falhou — tentando Google Speech")
+
+        return await self._recognize_google(audio_bytes)
+
+    async def _recognize_groq(self, audio_bytes: bytes) -> Optional[str]:
         try:
-            import speech_recognition as sr
-            import tempfile
-            import os
-
-            # Criar recognizer se necessário
-            if self._recognizer is None:
-                self._recognizer = sr.Recognizer()
-
-            # Salvar áudio em arquivo temporário
-            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmpfile:
-                tmp_path = tmpfile.name
-                tmpfile.write(audio_bytes)
-
-            try:
-                # Processar arquivo
-                with sr.AudioFile(tmp_path) as source:
-                    audio = self._recognizer.record(source)
-
-                    # Tentar Google Speech Recognition primeiro (online, melhor qualidade)
-                    try:
-                        text = await asyncio.to_thread(
-                            self._recognizer.recognize_google,
-                            audio,
-                            language=self.language
-                        )
-                        logger.debug(f"Google reconheceu: {text}")
-                        return text.lower()
-
-                    except (sr.UnknownValueError, sr.RequestError) as google_error:
-                        logger.debug(f"Google falhou: {google_error}")
-
-                        # Fallback: CMU Sphinx (offline, pior qualidade mas funciona)
-                        try:
-                            text = await asyncio.to_thread(
-                                self._recognizer.recognize_sphinx,
-                                audio,
-                                language=self.language
-                            )
-                            logger.debug(f"Sphinx reconheceu: {text}")
-                            return text.lower()
-
-                        except Exception as sphinx_error:
-                            logger.debug(f"Sphinx também falhou: {sphinx_error}")
-                            return None
-
-            finally:
-                # Limpar arquivo temporário
-                try:
-                    os.unlink(tmp_path)
-                except:
-                    pass
-
-        except sr.UnknownValueError:
-            logger.debug("Fala não reconhecida por nenhum método")
-            return None
-        except ImportError:
-            logger.error("speech_recognition não instalado")
+            # Groq espera um file-like com nome — usamos tupla (filename, bytes)
+            result = await asyncio.to_thread(
+                self._groq_client.audio.transcriptions.create,
+                file=("audio.wav", audio_bytes),
+                model="whisper-large-v3-turbo",
+                language="pt",
+                response_format="text",
+            )
+            text = result.strip() if isinstance(result, str) else result.text.strip()
+            if text:
+                logger.debug(f"Groq reconheceu: {text}")
+                return text.lower()
             return None
         except Exception as e:
-            logger.error(f"Erro no reconhecimento: {e}")
+            logger.warning(f"Groq erro: {e}")
+            return None
+
+    async def _recognize_google(self, audio_bytes: bytes) -> Optional[str]:
+        try:
+            import speech_recognition as sr
+
+            if self._sr_recognizer is None:
+                self._sr_recognizer = sr.Recognizer()
+
+            tmp_path = None
+            try:
+                with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as f:
+                    tmp_path = f.name
+                    f.write(audio_bytes)
+
+                with sr.AudioFile(tmp_path) as source:
+                    audio = self._sr_recognizer.record(source)
+
+                text = await asyncio.to_thread(
+                    self._sr_recognizer.recognize_google,
+                    audio,
+                    language=self.language
+                )
+                logger.debug(f"Google reconheceu: {text}")
+                return text.lower()
+
+            finally:
+                if tmp_path:
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception:
+                        pass
+
+        except Exception as e:
+            logger.debug(f"Google falhou: {e}")
             return None
 
     async def recognize_from_file(self, file_path: str) -> Optional[str]:
-        """Reconhece fala a partir de arquivo"""
         try:
             with open(file_path, 'rb') as f:
                 audio_bytes = f.read()

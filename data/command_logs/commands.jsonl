@@ -67,3 +67,34 @@
 {"timestamp": "2026-04-15T22:49:13.196139", "command": "eu gostaria que você criasse um arquivo ponto html dentro desses documentos e dentro dele eu quero que você escreva um h1 um h1 com o título low word e abra para mim esse esse que foi criado", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
 {"timestamp": "2026-04-15T22:51:54.770675", "command": "por favor abra meu terminal para mim", "type": "openclaude", "confidence": 0.5, "wake_word": "aether"}
 {"timestamp": "2026-04-15T22:52:24.163425", "command": "ótimo então viaje até a pasta documentos e nessa pasta documentos crie um arquivo html com um título h1 hello world e abra para mim no navegador", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:58:46.801684", "command": "tá aí", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:59:07.603699", "command": "tá aí", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:59:25.706279", "command": "certo deixa eu te fazer uma uma pergunta você sabe o que é o projeto luminar xr", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:00:12.855915", "command": "não nada não faça um favor para mim eu gostaria que você viajasse até a pasta documentos criasse um arquivo index html dentro desse arquivo eu gostaria que você criasse um h1 com título chamado hello world certo e depois abrisse para mim no navegador", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:01:29.739191", "command": "l éder funcionou agora eu gostaria que você tirasse print da minha tela direito", "type": "unknown", "confidence": 0.7, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:01:54.978153", "command": "rapaz ele não entendeu gostaria que você tirasse print da minha tela direita tirasse uma foto da minha tela direita", "type": "unknown", "confidence": 0.7999999999999999, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:05:57.504262", "command": "tira print da minha tela direito por favor", "type": "screenshot", "confidence": 0.7, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:06:16.156847", "command": "eu falei o monitor direito não esquerdo segundo monitor", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:06:42.744853", "command": "tira um print da tela direita uma segunda monitor por favor", "type": "screenshot", "confidence": 0.7, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:14:48.913345", "command": "tá me escutando", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:15:27.950593", "command": "por favor eu gostaria que você viajasse até a pasta documentos dentro dessa pasta documentos eu gostaria que você criasse um index.ht ml desse arquivo index html por favor crie um um uma estrutura html padrão e com o título h1 hello world depois abra para mim por favor no navegador", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:20:31.604072", "command": "tá aí", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:21:04.334021", "command": "eu gostaria que você fizesse para mim o index html dentro da pasta documentos então só queria um arquivo para mim dentro da pasta documentos o index html com estrutura html dentro dele e com um h1 escrito hello world depois abra para mim no navegador", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:25:47.126624", "command": "por que você não me escutou éder", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:31:28.283965", "command": "tá aí", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:31:59.469590", "command": "viagem até a pasta documentos cria um arquivo index.html.gz", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:33:44.546652", "command": "você consegue abrir o obsídio para mim", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:34:04.692535", "command": "consegue fazer uma busca para saber onde ele está", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:34:51.439960", "command": "não é no próprio obsidian eu tenho um arquivo chamado obsidian e o arquivo não desculpa é um executável chamado obsidian e dentro de uma pasta chama deve ir logs é onde está todo seu histórico todo seu mapa todo suas sessões recentes ele é muito importante para todo o contexto para todo seu aprendizado certo", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:48:58.621422", "command": "to adoro", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T23:49:11.802196", "command": "é de, está aí.", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:06:05.689175", "command": "er está aí.", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:06:17.444993", "command": "é d.", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:06:31.592159", "command": "sabe o que significa é de?", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:06:46.510208", "command": "e aí", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:07:33.400115", "command": ".", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:08:06.277338", "command": "tchau.", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:10:35.503670", "command": "está aí.", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:10:50.183334", "command": "e aí", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:11:19.459040", "command": ", abre minha unit pra mim, por favor.", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-16T19:11:32.926274", "command": "e aí", "type": "llm_route", "confidence": 0.5, "wake_word": "aether"}

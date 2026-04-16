@@ -1,5 +1,5 @@
 """
-Gerenciador de conhecimento do Aether usando Obsidian
+Gerenciador de conhecimento do Iris usando Obsidian
 Armazena interações, screenshots e insights no vault do Obsidian
 """
 
@@ -15,19 +15,19 @@ logger = logging.getLogger(__name__)
 class ObsidianManager:
     """Gerenciador do vault do Obsidian para armazenamento de conhecimento"""
 
-    def __init__(self, vault_path: str, log_folder: str = "Aether"):
+    def __init__(self, vault_path: str, log_folder: str = "Iris"):
         self.vault_path = Path(vault_path)
-        self.aether_dir = self.vault_path / log_folder
-        self.interactions_dir = self.aether_dir / "Interactions"
-        self.screenshots_dir = self.aether_dir / "Screenshots"
-        self.insights_dir = self.aether_dir / "Insights"
+        self.iris_dir = self.vault_path / log_folder
+        self.interactions_dir = self.iris_dir / "Interactions"
+        self.screenshots_dir = self.iris_dir / "Screenshots"
+        self.insights_dir = self.iris_dir / "Insights"
 
         self.ensure_directories()
 
         logger.info(f"ObsidianManager inicializado (vault: {self.vault_path})")
 
     def ensure_directories(self):
-        for directory in [self.aether_dir, self.interactions_dir, self.screenshots_dir, self.insights_dir]:
+        for directory in [self.iris_dir, self.interactions_dir, self.screenshots_dir, self.insights_dir]:
             directory.mkdir(parents=True, exist_ok=True)
 
     async def save_interaction(self, data: Dict[str, Any]) -> bool:
@@ -210,7 +210,7 @@ dimensions: {screenshot_data.get('dimensions', (0, 0))}
             filepath = self.insights_dir / filename
 
             tag_list = tags or []
-            tag_list.append('aether')
+            tag_list.append('iris')
             tag_list.append('insight')
 
             formatted_content = f"""---
@@ -227,7 +227,7 @@ tags: {', '.join(tag_list)}
 
 ---
 
-*Insight gerado automaticamente pelo Aether*
+*Insight gerado automaticamente pelo Iris*
 """
 
             with open(filepath, 'w', encoding='utf-8') as f:

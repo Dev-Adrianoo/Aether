@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Teste avançado do sistema de screenshots do Aether
+Teste avançado do sistema de screenshots do Iris
 """
 
 import asyncio
@@ -185,7 +185,7 @@ async def test_context_economy():
 
 async def main():
     """Função principal"""
-    print(f"🧠 AETHER - Teste Avançado de Screenshots")
+    print(f"🧠 IRIS - Teste Avançado de Screenshots")
     print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
 
@@ -226,7 +226,7 @@ async def main():
         print("O sistema de screenshots está funcionando perfeitamente.")
         print("\nPróximos passos:")
         print("1. Integrar com módulo de audição")
-        print("2. Implementar wake word 'Aether'")
+        print("2. Implementar wake word 'Iris'")
         print("3. Conectar com OpenClaude")
     else:
         print("\n⚠️  ALGUNS TESTES FALHARAM")

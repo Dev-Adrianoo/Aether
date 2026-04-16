@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script de teste para verificar instalação do Aether
+Script de teste para verificar instalação do Iris
 """
 
 import sys
@@ -9,7 +9,7 @@ from datetime import datetime
 
 def test_imports():
     """Testa todas as importações essenciais"""
-    print("🧪 TESTANDO INSTALAÇÃO DO AETHER")
+    print("🧪 TESTANDO INSTALAÇÃO DO IRIS")
     print("=" * 50)
 
     tests = [
@@ -99,7 +99,7 @@ async def test_tts():
 
 async def main():
     """Função principal de teste"""
-    print(f"🧠 AETHER SENSORY SYSTEM - Teste de Instalação")
+    print(f"🧠 IRIS SENSORY SYSTEM - Teste de Instalação")
     print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
 
@@ -122,7 +122,7 @@ async def main():
 
     if screenshot_ok and tts_ok:
         print("\n🎉 TODOS OS TESTES PASSARAM!")
-        print("O Aether está pronto para uso.")
+        print("O Iris está pronto para uso.")
         print("\nPara iniciar: python main.py")
     else:
         print("\n⚠️  ALGUNS TESTES FALHARAM")

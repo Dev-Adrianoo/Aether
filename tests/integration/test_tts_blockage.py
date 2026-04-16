@@ -50,7 +50,7 @@ async def test_tts_blockage():
     print("\n" + "-" * 40)
     print("TESTE 1: Frase única")
     print("-" * 40)
-    await tts.speak("Primeira fala do sistema Aether.")
+    await tts.speak("Primeira fala do sistema Iris.")
     print("✅ Primeira fala concluída")
 
     # Teste 2: Múltiplas frases seguidas

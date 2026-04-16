@@ -6,6 +6,7 @@ Separação clara entre reconhecimento e processamento.
 import logging
 import time
 import difflib
+import unicodedata
 from datetime import datetime
 from typing import Optional, Callable, Dict, Any, List
 from pathlib import Path
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 class CommandProcessor:
     """Processa comandos de voz extraídos do texto"""
 
-    def __init__(self, wake_word: str = "aether", cooldown: float = 2.0, fuzzy_threshold: float = 0.6,
+    def __init__(self, wake_word: str = "iris", cooldown: float = 2.0, fuzzy_threshold: float = 0.82,
                  conversation_timeout: float = 120.0):
         self.wake_word = wake_word.lower()
         self.cooldown = cooldown
@@ -33,17 +34,17 @@ class CommandProcessor:
         self._conv_timeout = conversation_timeout
         self._conv_last = 0.0
 
+    def _normalize(self, text: str) -> str:
+        """Remove acentos para comparação fonética"""
+        return unicodedata.normalize('NFD', text).encode('ascii', 'ignore').decode()
+
     def _generate_wake_variations(self, word: str) -> List[str]:
         """Gera variações fonéticas comuns para português"""
         variations = [word.lower()]
 
         phonetic_variations = [
             word.lower(),
-            word.lower().replace('th', 't'),      # aether → aeter
-            word.lower().replace('th', 'd'),      # aether → aeder
-            word.lower().replace('ae', 'e'),      # aether → ether
-            word.lower().replace('ae', 'a'),      # aether → ather
-            word.lower().replace('th', ''),       # aether → ae
+            "íris",   # com acento
         ]
 
         for var in phonetic_variations:
@@ -118,23 +119,24 @@ class CommandProcessor:
         Detecta wake word com fuzzy matching.
         Retorna (detectada, palavra_detectada)
         """
-        # Verificar variações exatas primeiro
+        # Verificar variações exatas primeiro (normalizado para ignorar acentos)
+        text_norm = self._normalize(text)
         for variation in self.wake_variations:
-            if variation in text:
+            if self._normalize(variation) in text_norm:
                 return True, variation
 
-        # Fuzzy matching para palavras próximas
+        # Fuzzy matching para palavras próximas (normalizado — sem acentos)
         words = text.split()
         for word in words:
-            # Verificar similaridade com wake word original
-            similarity = difflib.SequenceMatcher(None, word, self.wake_word).ratio()
+            word_norm = self._normalize(word)
+
+            similarity = difflib.SequenceMatcher(None, word_norm, self._normalize(self.wake_word)).ratio()
             if similarity >= self.fuzzy_threshold:
                 logger.debug(f"Fuzzy match: '{word}' ~ '{self.wake_word}' ({similarity:.2f})")
                 return True, word
 
-            # Verificar similaridade com variações
             for variation in self.wake_variations:
-                similarity = difflib.SequenceMatcher(None, word, variation).ratio()
+                similarity = difflib.SequenceMatcher(None, word_norm, self._normalize(variation)).ratio()
                 if similarity >= self.fuzzy_threshold:
                     logger.debug(f"Fuzzy match: '{word}' ~ '{variation}' ({similarity:.2f})")
                     return True, variation

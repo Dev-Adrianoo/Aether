@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Aether Sensory System — ponto de entrada principal.
+Iris Sensory System — ponto de entrada principal.
 Orquestra visão, voz e integração com LLM.
 """
 
@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Arquivo: tudo em DEBUG para diagnóstico
-_file_handler = logging.FileHandler('aether.log')
+_file_handler = logging.FileHandler('iris.log')
 _file_handler.setLevel(logging.DEBUG)
 _file_handler.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s'))
 
@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handl
 logger = logging.getLogger(__name__)
 
 
-class AetherSensorySystem:
+class IrisSensorySystem:
 
     def __init__(self):
         self.base_dir = Path(__file__).parent
@@ -42,7 +42,7 @@ class AetherSensorySystem:
             from src.brain.obsidian_manager import ObsidianManager
             from config import config
 
-            print("Aether iniciando...")
+            print("Iris iniciando...")
 
             from src.integrations.openclaude_subprocess import OpenClaudeSubprocess
             oc = OpenClaudeSubprocess()
@@ -72,7 +72,7 @@ class AetherSensorySystem:
                 print("[OK] LLM conectado (DeepSeek)")
             else:
                 print("[WARN] LLM offline — conversa livre indisponível")
-                await self.modules['speech'].speak(
+                await self._speak(
                     "Atenção: sem conexão com o LLM. Conversa livre indisponível."
                 )
 
@@ -85,6 +85,18 @@ class AetherSensorySystem:
         except Exception as e:
             print(f"[ERRO] Falha na inicialização: {e}")
             return False
+
+    async def _speak(self, text: str):
+        """Fala e muta o microfone durante a reprodução para evitar loopback."""
+        hearing = self.modules.get('hearing')
+        if hearing:
+            hearing.is_speaking = True
+        try:
+            await self.modules['speech'].speak(text)
+            await asyncio.sleep(0.8)  # buffer para eco do speaker dissipar
+        finally:
+            if hearing:
+                hearing.is_speaking = False
 
     def _setup_callbacks(self):
         vision = self.modules['vision']
@@ -118,11 +130,11 @@ class AetherSensorySystem:
         )
         if analysis and analysis.get('filepath'):
             w, h = analysis.get('dimensions', (0, 0))
-            await self.modules['speech'].speak(
+            await self._speak(
                 f"Print do {label} capturado. {w}x{h} pixels, salvo em screenshots."
             )
         else:
-            await self.modules['speech'].speak("Erro ao capturar tela.")
+            await self._speak("Erro ao capturar tela.")
 
     async def _handle_task_command(self, command_text: str, confidence: float):
         from src.actions.system_actions import write_claude_task
@@ -138,9 +150,9 @@ class AetherSensorySystem:
             response = await self.modules['integration'].ask_question(
                 f"Acabei de anotar a tarefa: '{task_text}'. Confirme de forma natural e breve."
             )
-            await self.modules['speech'].speak(response or "Anotado.")
+            await self._speak(response or "Anotado.")
         else:
-            await self.modules['speech'].speak("Qual é a tarefa que devo anotar?")
+            await self._speak("Qual é a tarefa que devo anotar?")
 
     async def _handle_llm_route(self, command_text: str, confidence: float):
         """
@@ -186,7 +198,7 @@ Retorne APENAS o JSON."""
 
         raw = await llm.classify(classification_prompt)
         if not raw:
-            await speech.speak("Não entendi. Pode repetir?")
+            await self._speak("Não entendi. Pode repetir?")
             return
 
         # Extrai JSON da resposta (LLM às vezes adiciona markdown)
@@ -223,14 +235,14 @@ Retorne APENAS o JSON."""
             if wrong and right:
                 self.stt_corrector.add(wrong, right)
                 await self._save_correction_to_vault(wrong, right)
-                await speech.speak(f"Entendido. Vou lembrar que '{wrong}' é '{right}'.")
+                await self._speak(f"Entendido. Vou lembrar que '{wrong}' é '{right}'.")
             else:
-                await speech.speak("Não entendi a correção. Pode repetir?")
+                await self._speak("Não entendi a correção. Pode repetir?")
 
         elif intent_type == "conversation":
             response = intent.get("response", "")
             if response:
-                await speech.speak(response)
+                await self._speak(response)
             else:
                 await self._handle_conversation(command_text, confidence)
 
@@ -241,28 +253,28 @@ Retorne APENAS o JSON."""
         """Recebe prompt ja limpo do LLM router e envia pro OpenClaude."""
         oc = self.modules.get('openclaude')
         if not oc:
-            await self.modules['speech'].speak("OpenClaude nao esta disponivel.")
+            await self._speak("OpenClaude nao esta disponivel.")
             return
 
-        aether_dir = str(Path(__file__).parent)
-        aether_keywords = ["aether", "voce mesmo", "em voce", "no seu codigo", "obsidian", "vault", "nova acao", "system_actions", "registry"]
-        is_self = any(kw in command_text.lower() for kw in aether_keywords)
-        working_dir = aether_dir if is_self else str(Path.home() / "Documents")
+        iris_dir = str(Path(__file__).parent)
+        iris_keywords = ["iris", "voce mesmo", "em voce", "no seu codigo", "obsidian", "vault", "nova acao", "system_actions", "registry"]
+        is_self = any(kw in command_text.lower() for kw in iris_keywords)
+        working_dir = iris_dir if is_self else str(Path.home() / "Documents")
 
-        await self.modules['speech'].speak("Entendido. Abrindo o terminal.")
+        await self._speak("Entendido. Abrindo o terminal.")
         oc.run_visible(prompt=command_text, working_dir=working_dir)
-        await self.modules['speech'].speak("OpenClaude ta trabalhando. Acompanha no terminal.")
+        await self._speak("OpenClaude ta trabalhando. Acompanha no terminal.")
 
     async def _handle_openclaude_terminal(self, command_text: str, confidence: float):
         oc = self.modules.get('openclaude')
         if not oc:
-            await self.modules['speech'].speak("OpenClaude não está disponível.")
+            await self._speak("OpenClaude não está disponível.")
             return
         text = command_text.lower()
         fechar = any(w in text for w in ["esconde", "fecha", "oculta", "fechar", "esconder"])
         if fechar:
             oc.hide_terminal()
-            await self.modules['speech'].speak("Fechando o terminal.")
+            await self._speak("Fechando o terminal.")
             return
 
         # Detecta qual shell o usuário quer
@@ -272,34 +284,34 @@ Retorne APENAS o JSON."""
             shell = "powershell"
         else:
             # Não especificou — pergunta e abre powershell por padrão
-            await self.modules['speech'].speak(
+            await self._speak(
                 "Abrindo PowerShell. Se quiser cmd, só falar."
             )
             shell = "powershell"
 
         oc.show_terminal(shell=shell)
-        await self.modules['speech'].speak(f"Terminal do OpenClaude aberto.")
+        await self._speak(f"Terminal do OpenClaude aberto.")
 
     async def _handle_action(self, command_text: str, confidence: float):
         from src.actions.registry import dispatch
         feedback = dispatch(command_text)
         if feedback:
-            await self.modules['speech'].speak(feedback)
+            await self._speak(feedback)
         else:
             await self._handle_conversation(command_text, confidence)
 
     async def _handle_stop_command(self, command_text: str, confidence: float):
-        await self.modules['speech'].speak("Encerrando")
+        await self._speak("Encerrando")
         self.running = False
 
     async def _handle_status_command(self, command_text: str, confidence: float):
-        await self.modules['speech'].speak(
+        await self._speak(
             "Online e funcionando. LLM conectado, voz ativa."
         )
 
     async def _handle_help_command(self, command_text: str, confidence: float):
-        await self.modules['speech'].speak(
-            "Diga Aether seguido do seu comando. "
+        await self._speak(
+            "Diga Iris seguido do seu comando. "
             "Posso capturar a tela, responder perguntas ou verificar meu status."
         )
 
@@ -307,7 +319,7 @@ Retorne APENAS o JSON."""
         logger.debug(f"Conversa: {command_text}")
         response = await self.modules['integration'].ask_question(command_text)
         if not response:
-            await self.modules['speech'].speak("Não consegui responder agora. Pode repetir?")
+            await self._speak("Não consegui responder agora. Pode repetir?")
             return
 
         # LLM decidiu que é tarefa de execução — rota pro code_agent
@@ -316,7 +328,7 @@ Retorne APENAS o JSON."""
             await self._handle_code_agent(task, confidence)
             return
 
-        await self.modules['speech'].speak(response)
+        await self._speak(response)
         await self._log_to_obsidian({
             'type': 'conversation',
             'question': command_text,
@@ -332,7 +344,7 @@ Retorne APENAS o JSON."""
 
     async def _save_correction_to_vault(self, wrong: str, right: str):
         """Registra correção de STT no vault Obsidian."""
-        vault = Path(r"C:\Users\Adria\Documents\Documentation\Dev-Aether-logs")
+        vault = Path(r"C:\Users\Adria\Documents\Documentation\Dev-iris-logs")
         corrections_note = vault / "04_APRENDIZADOS" / "LEARN_STT_corrections.md"
         from datetime import datetime
         entry = f"- `{wrong}` → `{right}`  <!-- {datetime.now().strftime('%Y-%m-%d %H:%M')} -->\n"
@@ -350,7 +362,7 @@ Retorne APENAS o JSON."""
             return
 
         self.running = True
-        print("Pronto. Diga 'Aether' para ativar.\n")
+        print("Pronto. Diga 'Iris' para ativar.\n")
 
         try:
             await asyncio.gather(
@@ -371,7 +383,7 @@ Retorne APENAS o JSON."""
                 await module.stop()
             elif hasattr(module, 'shutdown'):
                 await module.shutdown()
-        print("\nAether encerrado.")
+        print("\nIris encerrado.")
 
     async def _save_session_summary(self):
         try:
@@ -393,8 +405,8 @@ Retorne APENAS o JSON."""
 
 
 async def main():
-    aether = AetherSensorySystem()
-    await aether.run()
+    iris = IrisSensorySystem()
+    await iris.run()
 
 
 if __name__ == "__main__":

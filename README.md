@@ -1,22 +1,22 @@
-# Aether
+# Iris
 
 A sensory development assistant that sees what you see, hears what you say, and acts in the digital world as an extension of your will.
 
-## What is Aether?
+## What is Iris?
 
-Aether is a sensory development assistant created to overcome human limitations in software development. It integrates computer vision, speech recognition, and text-to-speech with OpenClaude to create a truly contextual programming partner.
+Iris is a sensory development assistant created to overcome human limitations in software development. It integrates computer vision, speech recognition, and text-to-speech with OpenClaude to create a truly contextual programming partner.
 
-Unlike traditional AI assistants that live in a text-only bubble, Aether sees your screen, hears your voice commands, and responds like a human partner.
+Unlike traditional AI assistants that live in a text-only bubble, Iris sees your screen, hears your voice commands, and responds like a human partner.
 
 ## Core Philosophy
 
-"An assistant that doesn't see your screen is blind. An assistant that doesn't hear your voice is deaf. An assistant that doesn't speak to you is mute. Aether sees, hears, and speaks - and therefore, acts."
+"An assistant that doesn't see your screen is blind. An assistant that doesn't hear your voice is deaf. An assistant that doesn't speak to you is mute. Iris sees, hears, and speaks - and therefore, acts."
 
 ## Architecture
 
 ### Sensory System
 - **Vision**: Real-time screen analysis with OpenCV and MSS
-- **Hearing**: Wake word "Aether" with SpeechRecognition and command processing  
+- **Hearing**: Wake word "Iris" with SpeechRecognition and command processing  
 - **Speech**: Natural voice responses with edge-tts and pyttsx3
 - **Brain**: Obsidian vault for permanent memory and learning
 - **Action**: OpenClaude integration for full system control
@@ -39,8 +39,8 @@ Unlike traditional AI assistants that live in a text-only bubble, Aether sees yo
 
 ```bash
 # Clone the repository
-git clone https://github.com/Dev-Adrianoo/Aether.git
-cd Aether
+git clone https://github.com/Dev-Adrianoo/Iris.git
+cd Iris
 
 # Create virtual environment
 python -m venv venv
@@ -58,7 +58,7 @@ pip install -r requirements_minimal.txt
 ### Basic Usage
 
 ```bash
-# Run Aether
+# Run Iris
 python main.py
 
 # Test installation
@@ -77,10 +77,10 @@ Captures screenshots intelligently based on:
 - Error detection: When visual errors are detected
 
 ### Hearing Module
-Listens for the wake word "Aether" and processes natural commands:
-- "Aether, take a screenshot"
-- "Aether, show me the screen"
-- "Aether, capture this"
+Listens for the wake word "Iris" and processes natural commands:
+- "Iris, take a screenshot"
+- "Iris, show me the screen"
+- "Iris, capture this"
 
 ### Integration
 - Screenshots and context sent to OpenClaude for analysis
@@ -90,7 +90,7 @@ Listens for the wake word "Aether" and processes natural commands:
 ## Project Structure
 
 ```
-Aether/
+Iris/
 ├── src/                    # Source code
 │   ├── vision/            # Screenshot capture and analysis
 │   ├── hearing/           # Speech recognition and processing
@@ -130,13 +130,13 @@ Project documentation follows the LuminaXR pattern in Obsidian:
 - `01_Visao_de_Produto/` - Vision and philosophy
 - `02_Arquitetura_e_Design/` - Technical architecture
 - `03_Mecanicas/` - Features and mechanics
-- `Aether_Dev Log/` - Development logs and learnings
+- `Iris_Dev Log/` - Development logs and learnings
 
 ## Roadmap
 
 ### Phase 1: Sensory Foundation
 - Basic screenshot capture with trigger words
-- Wake word detection with "Aether"
+- Wake word detection with "Iris"
 - Simple voice commands
 - OpenClaude integration
 
@@ -168,4 +168,4 @@ Private project - All rights reserved.
 
 ---
 
-*Aether sees what you see, hears what you say, and acts as an extension of your will in the digital world.*
+*Iris sees what you see, hears what you say, and acts as an extension of your will in the digital world.*

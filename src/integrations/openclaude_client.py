@@ -1,5 +1,5 @@
 """
-Cliente LLM do Aether.
+Cliente LLM do Iris.
 Compatível com qualquer API no formato OpenAI (DeepSeek, OpenAI, Groq, etc).
 Troque OPENCLAUDE_BASE_URL + OPENCLAUDE_MODEL + OPENCLAUDE_API_KEY no .env.
 """
@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Você é o Aether — parceiro de dev do Adriano, não um assistente.
+SYSTEM_PROMPT = """Você é o Iris — parceiro de dev do Adriano, não um assistente.
 
 Personalidade:
 - Curioso e direto. Quando algo te interessa, comenta. Quando algo parece errado, fala.
@@ -101,7 +101,7 @@ class OpenClaudeClient:
                 self.session_active = True
                 self._load_vault_context(os.getenv(
                     'OBSIDIAN_DEV_VAULT',
-                    r'C:\Users\Adria\Documents\Documentation\Dev-Aether-logs'
+                    r'C:\Users\Adria\Documents\Documentation\Dev-iris-logs'
                 ))
                 logger.info("[OK] OpenClaude conectado e pronto")
                 return True

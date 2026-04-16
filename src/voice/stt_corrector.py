@@ -4,7 +4,7 @@ Quando o usuário corrige uma transcrição errada, salva o mapeamento
 e aplica automaticamente nas próximas transcrições.
 
 Formato do arquivo: data/stt_corrections.json
-{"fashion kellyn": "function calling", "éder": "aether", ...}
+{"fashion kellyn": "function calling", "éder": "iris", ...}
 """
 
 import json

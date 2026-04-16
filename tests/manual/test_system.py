@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script de teste rápido para o sistema Aether.
+Script de teste rápido para o sistema Iris.
 """
 
 import asyncio
@@ -63,7 +63,7 @@ async def test_tts():
         await tts.initialize()
 
         print("Falando teste...")
-        await tts.speak("Sistema Aether funcionando")
+        await tts.speak("Sistema Iris funcionando")
 
         await tts.shutdown()
         print("✅ Sistema TTS OK")
@@ -76,7 +76,7 @@ async def test_tts():
 async def main():
     """Executa todos os testes"""
     print("="*50)
-    print("TESTE DO SISTEMA AETHER")
+    print("TESTE DO SISTEMA IRIS")
     print("="*50)
 
     tests_passed = 0
@@ -101,7 +101,7 @@ async def main():
     if tests_passed == total_tests:
         print("✅ SISTEMA PRONTO PARA USO")
         print("\nPara iniciar: python main.py")
-        print("Comandos: 'Aether, captura tela'")
+        print("Comandos: 'Iris, captura tela'")
     else:
         print("⚠️  ALGUNS TESTES FALHARAM")
         print("Verifique as mensagens acima.")

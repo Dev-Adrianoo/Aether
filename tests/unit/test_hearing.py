@@ -106,7 +106,7 @@ class TestProcessAudioCallback:
         processor = Mock(spec=CommandProcessor)
         processor.process_text = AsyncMock(return_value=False)
         recognizer = Mock(spec=SpeechRecognizer)
-        recognizer.recognize = AsyncMock(return_value="aether captura tela")
+        recognizer.recognize = AsyncMock(return_value="iris captura tela")
 
         listener = make_listener(speech_recognizer=recognizer, command_processor=processor)
         listener.running = True
@@ -114,7 +114,7 @@ class TestProcessAudioCallback:
         await listener._process_audio_callback(b"fake_audio")
 
         recognizer.recognize.assert_called_once_with(b"fake_audio")
-        processor.process_text.assert_called_once_with("aether captura tela")
+        processor.process_text.assert_called_once_with("iris captura tela")
 
     @pytest.mark.asyncio
     async def test_none_text_skips_processor(self):

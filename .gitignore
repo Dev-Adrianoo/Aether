@@ -51,7 +51,7 @@ data/audio_logs/
 data/command_logs/
 data/knowledge_db/
 *.log
-aether.log
+iris.log
 
 # Configurations
 .env
