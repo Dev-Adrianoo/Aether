@@ -102,12 +102,12 @@ class AetherConfig:
         device_raw = os.getenv('AUDIO_DEVICE_INDEX')
         return AudioConfig(
             wake_word=self._get_env('AETHER_WAKE_WORD', 'aether'),
-            sample_rate=self._get_env_int('AUDIO_SAMPLE_RATE', 44100),
+            sample_rate=self._get_env_int('AUDIO_SAMPLE_RATE', 16000),
             channels=self._get_env_int('AETHER_AUDIO_CHANNELS', 1),
             phrase_time_limit=self._get_env_int('AETHER_PHRASE_TIME_LIMIT', 5),
             energy_threshold=self._get_env_int('AETHER_ENERGY_THRESHOLD', 4000),
             pause_threshold=0.8,
-            device_index=int(device_raw) if device_raw is not None else 47
+            device_index=int(device_raw) if device_raw is not None else 13
         )
 
     def _load_openclaude_config(self) -> OpenClaudeConfig:
