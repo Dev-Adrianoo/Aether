@@ -29,7 +29,8 @@ class VoiceListener:
         # Dependency Injection ou criação padrão
         self.audio_capture = audio_capture or AudioCaptureFactory.create_capture(
             method="sounddevice",
-            device=1  # Dispositivo USB que funciona
+            device=47,        # WDM-KS USB mic (RMS ~270 com voz)
+            sample_rate=44100  # MME device 1 retorna zeros; WDM-KS exige 44100Hz
         )
         self.speech_recognizer = speech_recognizer or SpeechRecognizer(language="pt-BR")
         self.command_processor = command_processor or CommandProcessor(wake_word="aether")
