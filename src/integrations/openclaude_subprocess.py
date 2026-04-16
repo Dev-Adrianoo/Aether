@@ -121,33 +121,32 @@ class OpenClaudeSubprocess:
         Singleton: reutiliza terminal aberto ou abre um novo.
         Escreve o prompt num arquivo temporário e passa via stdin — evita erro de parsing.
         """
-        import tempfile, os
-
         cwd = working_dir or str(Path.home() / "Documents")
 
-        # Garante que o cwd existe e é uma pasta real (evita "navegador padrão" virar path)
         cwd_path = Path(cwd)
         if not cwd_path.exists() or not cwd_path.is_dir():
             cwd = str(Path.home() / "Documents")
 
-        # Salva prompt em arquivo temporário para evitar problemas de escaping
-        tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8')
-        tmp.write(prompt)
-        tmp.close()
+        # Arquivos fixos — sobrescreve sempre, sem acumular lixo
+        run_dir = Path(__file__).parent.parent.parent / "data" / "run"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        prompt_file = run_dir / "prompt.txt"
+        script_file = run_dir / "run_openclaude.ps1"
+
+        prompt_file.write_text(prompt, encoding="utf-8")
+        script_file.write_text(
+            f"Set-Location '{cwd}'\n"
+            f"$prompt = Get-Content -Raw '{prompt_file}'\n"
+            f"node '{OPENCLAUDE_BIN}' --dangerously-skip-permissions -p $prompt\n",
+            encoding="utf-8"
+        )
 
         # Singleton: fecha terminal anterior se ainda aberto
         if self._terminal_proc and self._terminal_proc.poll() is None:
             self._terminal_proc.terminate()
             self._terminal_proc = None
 
-        # Escreve script .ps1 — evita todo problema de escaping de aspas
-        ps1 = tempfile.NamedTemporaryFile(mode='w', suffix='.ps1', delete=False, encoding='utf-8')
-        ps1.write(f"Set-Location '{cwd}'\n")
-        ps1.write(f"$prompt = Get-Content -Raw '{tmp.name}'\n")
-        ps1.write(f"node '{OPENCLAUDE_BIN}' --dangerously-skip-permissions -p $prompt\n")
-        ps1.close()
-
-        cmd = f'start powershell -NoExit -File "{ps1.name}"'
+        cmd = f'start powershell -NoExit -File "{script_file}"'
         self._terminal_proc = subprocess.Popen(cmd, shell=True)
         logger.info(f"OpenClaude visível (singleton) em: {cwd}")
 
