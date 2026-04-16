@@ -11,6 +11,7 @@ from src.actions.system_actions import (
     open_spotify,
     open_vscode,
     open_unity,
+    open_obsidian,
 )
 
 # Mapa: lista de palavras-chave → função que executa a ação
@@ -20,6 +21,7 @@ ACTIONS: Dict[str, Tuple[List[str], Callable[[], str]]] = {
     "spotify":  (["spotify", "música"],    open_spotify),
     "vscode":   (["vscode", "vs code", "código"],  open_vscode),
     "unity":    (["unity"],                open_unity),
+    "obsidian": (["obsidian"],             open_obsidian),
 }
 
 

@@ -136,7 +136,7 @@ class SoundDeviceCapture(AudioCapture):
 
     async def capture_until_silence(
         self,
-        silence_duration: float = 1.5,
+        silence_duration: float = 2.5,
         max_duration: float = 30.0,
     ) -> Optional[bytes]:
         """
@@ -151,7 +151,7 @@ class SoundDeviceCapture(AudioCapture):
             CHUNK = int(0.1 * self.sample_rate)
             max_chunks = int(max_duration / 0.1)
             silence_needed = int(silence_duration / 0.1)
-            min_speech_chunks = 3
+            min_speech_chunks = 2
 
             loop = asyncio.get_event_loop()
             audio_chunks: list = []

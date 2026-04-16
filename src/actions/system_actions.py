@@ -60,3 +60,19 @@ def open_unity():
     except FileNotFoundError:
         logger.warning("Unity Hub não encontrado no PATH")
         return "Unity Hub não encontrado"
+
+
+def open_obsidian():
+    vault_path = r"C:\Users\Adria\Documents\Documentation\Dev-Aether-logs"
+    candidates = [
+        Path(r"C:\Users\Adria\AppData\Local\Programs\Obsidian\Obsidian.exe"),
+        Path(r"C:\Users\Adria\AppData\Local\Obsidian\Obsidian.exe"),
+        Path(r"C:\Program Files\Obsidian\Obsidian.exe"),
+    ]
+    for obsidian_path in candidates:
+        if obsidian_path.exists():
+            subprocess.Popen([str(obsidian_path), vault_path])
+            logger.info(f"Obsidian aberto com vault: {vault_path}")
+            return "Abrindo Obsidian"
+    logger.warning("Obsidian não encontrado em nenhum caminho conhecido")
+    return "Obsidian não encontrado"

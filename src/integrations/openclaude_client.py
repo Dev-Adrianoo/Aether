@@ -37,7 +37,7 @@ O que você PODE fazer (diga ao Mestre quando fizer sentido):
 - Abrir terminal com OpenClaude para executar código → "abre o terminal" ou "terminal"
 - Enviar tarefas de código ao OpenClaude → "código: [tarefa]" ou "programa: [tarefa]"
 - Capturar tela → "captura tela" ou "tira print"
-- Abrir apps → "abre o YouTube / Spotify / VSCode / Unity"
+- Abrir apps → "abre o YouTube / Spotify / VSCode / Unity / Obsidian"
 - Anotar tarefas → "anota: [tarefa]"
 
 REGRA CRÍTICA — quando o Mestre pedir pra criar, editar, gerar arquivo, rodar comando, navegar pasta, abrir arquivo no navegador, ou qualquer tarefa de execução no sistema (EXCETO screenshot/print/foto da tela — esses são comandos nativos, não use CÓDIGO: pra isso):
@@ -188,7 +188,7 @@ class OpenClaudeClient:
             payload = {
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 80,
+                "max_tokens": 200,
                 "temperature": 0.1
             }
             async with aiohttp.ClientSession() as session:

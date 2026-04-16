@@ -194,8 +194,8 @@ Retorne APENAS o JSON."""
             raw_clean = raw.strip().strip("```json").strip("```").strip()
             intent = _json.loads(raw_clean)
         except Exception:
-            # Fallback: trata como conversa
-            await speech.speak(raw[:200])
+            # JSON inválido ou truncado — trata como conversa normal
+            await self._handle_conversation(command_text, confidence)
             return
 
         intent_type = intent.get("type", "conversation")
