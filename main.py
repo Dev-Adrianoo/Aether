@@ -86,6 +86,7 @@ class AetherSensorySystem:
         hearing.register_command_handler("help", self._handle_help_command)
         hearing.register_command_handler("status", self._handle_status_command)
         hearing.register_command_handler("action", self._handle_action)
+        hearing.register_command_handler("task", self._handle_task_command)
         hearing.register_command_handler("conversation", self._handle_conversation)
         hearing.register_command_handler("unknown", self._handle_conversation)
 
@@ -110,6 +111,21 @@ class AetherSensorySystem:
             )
         else:
             await self.modules['speech'].speak("Erro ao capturar tela.")
+
+    async def _handle_task_command(self, command_text: str, confidence: float):
+        from src.actions.system_actions import write_claude_task
+        keywords = ["anota", "anote", "tarefa", "lembra", "lembre", "adiciona", "adicione", "registra", "registre"]
+        task_text = command_text.lower()
+        for kw in keywords:
+            if kw in task_text:
+                idx = task_text.find(kw) + len(kw)
+                task_text = command_text[idx:].strip(" :,-")
+                break
+        if task_text:
+            feedback = write_claude_task(task_text)
+            await self.modules['speech'].speak(feedback)
+        else:
+            await self.modules['speech'].speak("Qual é a tarefa que devo anotar?")
 
     async def _handle_action(self, command_text: str, confidence: float):
         from src.actions.registry import dispatch

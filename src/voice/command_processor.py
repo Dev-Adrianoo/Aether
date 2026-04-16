@@ -178,6 +178,7 @@ class CommandProcessor:
             "help": ["ajuda", "help", "comandos"],
             "status": ["status"],
             "action": ["abre", "abrir", "fecha o", "fechar o", "toca", "play", "pause", "inicia", "iniciar", "lança", "lançar"],
+            "task": ["anota", "anote", "tarefa", "lembra", "lembre", "adiciona", "adicione", "registra", "registre"],
         }
 
         for command_type, patterns in command_patterns.items():
