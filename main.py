@@ -95,6 +95,7 @@ class AetherSensorySystem:
         hearing.register_command_handler("status", self._handle_status_command)
         hearing.register_command_handler("action", self._handle_action)
         hearing.register_command_handler("task", self._handle_task_command)
+        hearing.register_command_handler("code_agent", self._handle_code_agent)
         hearing.register_command_handler("openclaude", self._handle_openclaude_terminal)
         hearing.register_command_handler("conversation", self._handle_conversation)
         hearing.register_command_handler("unknown", self._handle_conversation)
@@ -138,6 +139,64 @@ class AetherSensorySystem:
             await self.modules['speech'].speak(response or "Anotado.")
         else:
             await self.modules['speech'].speak("Qual é a tarefa que devo anotar?")
+
+    async def _handle_code_agent(self, command_text: str, confidence: float):
+        oc = self.modules.get('openclaude')
+        if not oc:
+            await self.modules['speech'].speak("OpenClaude não está disponível.")
+            return
+
+        speech = self.modules['speech']
+        llm = self.modules['integration']
+
+        # Passo 1: DeepSeek interpreta a intenção e decide se entendeu ou precisa perguntar
+        aether_dir = str(Path(__file__).parent)
+        aether_keywords = ["aether", "você mesmo", "em você", "no seu código", "se mesmo", "a si mesmo", "obsidian", "vault", "comando novo", "nova ação", "nova action"]
+        is_self_modification = any(kw in command_text.lower() for kw in aether_keywords)
+        working_dir = aether_dir if is_self_modification else str(Path.home() / "Documents")
+
+        # Detecta pasta mencionada explicitamente
+        import re
+        folder_match = re.search(r'(?:dentro de|na pasta|em|no)\s+([\w\s]+?)(?:\s+cria|\s+faz|\s+e\s|$)', command_text.lower())
+        if folder_match and not is_self_modification:
+            folder_name = folder_match.group(1).strip()
+            candidate = Path.home() / "Documents" / folder_name
+            working_dir = str(candidate)
+
+        context_note = ""
+        if is_self_modification:
+            context_note = f"\nIMPORTANTE: Esta tarefa modifica o próprio Aether. O projeto está em: {aether_dir}\nArquivos de ação: src/actions/system_actions.py e src/actions/registry.py"
+
+        interpret_prompt = f"""O usuário disse por voz (pode estar garrafado pelo reconhecimento de fala):
+"{command_text}"
+
+Contexto: projeto LuminaXR — modelador 3D em XR/VR com Unity e C#. Fase atual: sistema sensorial Python (Aether).{context_note}
+
+Sua tarefa:
+- Se você entendeu o que ele quer fazer no código: responda APENAS com "EXECUTAR: " seguido de um prompt técnico claro e completo para um agente de código executar. Seja específico: arquivos, linguagem, o que criar/modificar.
+- Se ficou ambíguo ou faltou informação essencial: responda APENAS com "PERGUNTA: " seguido de UMA pergunta curta e direta para esclarecer.
+
+Não explique. Não use markdown. Só "EXECUTAR: ..." ou "PERGUNTA: ..."."""
+
+        interpretation = await llm.ask_question(interpret_prompt)
+        if not interpretation:
+            await speech.speak("Não consegui interpretar o comando. Pode repetir?")
+            return
+
+        if interpretation.startswith("PERGUNTA:"):
+            question = interpretation[len("PERGUNTA:"):].strip()
+            await speech.speak(question)
+            # Próxima fala do usuário vai pro modo conversa normal — ele responde a pergunta
+            return
+
+        if interpretation.startswith("EXECUTAR:"):
+            final_prompt = interpretation[len("EXECUTAR:"):].strip()
+            await speech.speak("Entendido. Abrindo o terminal.")
+            oc.run_visible(prompt=final_prompt, working_dir=working_dir)
+            await speech.speak("OpenClaude tá trabalhando. Acompanha no terminal.")
+        else:
+            # Formato inesperado — trata como conversa
+            await speech.speak(interpretation)
 
     async def _handle_openclaude_terminal(self, command_text: str, confidence: float):
         oc = self.modules.get('openclaude')
@@ -192,17 +251,24 @@ class AetherSensorySystem:
     async def _handle_conversation(self, command_text: str, confidence: float):
         logger.debug(f"Conversa: {command_text}")
         response = await self.modules['integration'].ask_question(command_text)
-        if response:
-            await self.modules['speech'].speak(response)
-            await self._log_to_obsidian({
-                'type': 'conversation',
-                'question': command_text,
-                'answer': response,
-                'confidence': confidence,
-                'timestamp': datetime.now().isoformat()
-            })
-        else:
+        if not response:
             await self.modules['speech'].speak("Não consegui responder agora. Pode repetir?")
+            return
+
+        # LLM decidiu que é tarefa de execução — rota pro code_agent
+        if response.strip().startswith("CÓDIGO:"):
+            task = response.strip()[len("CÓDIGO:"):].strip()
+            await self._handle_code_agent(task, confidence)
+            return
+
+        await self.modules['speech'].speak(response)
+        await self._log_to_obsidian({
+            'type': 'conversation',
+            'question': command_text,
+            'answer': response,
+            'confidence': confidence,
+            'timestamp': datetime.now().isoformat()
+        })
 
     async def _handle_screenshot(self, screenshot_data, analysis):
         logger.debug(f"Screenshot: {analysis.get('summary', '')}")

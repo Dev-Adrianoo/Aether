@@ -16,3 +16,54 @@
 {"timestamp": "2026-04-15T19:56:21.373550", "command": "de parede", "type": "stop", "confidence": 0.5, "wake_word": "aether"}
 {"timestamp": "2026-04-15T19:56:28.114348", "command": "tá aí me responda", "type": "status", "confidence": 0.5, "wake_word": "aether"}
 {"timestamp": "2026-04-15T20:00:04.927771", "command": "está me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:01:06.577003", "command": "tá me escutando", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:01:19.426875", "command": "o éder como você está", "type": "status", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:01:31.840897", "command": "o que você está fazendo", "type": "help", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:06:56.603062", "command": "está escutando", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:07:10.503244", "command": "e você quer dizer quando não conseguiu", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:09:05.723008", "command": "estamos escutando", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:09:40.791307", "command": "você tem obsidia", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:37:45.034899", "command": "cho que não funcionou hein éder", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:38:07.593676", "command": "você entendeu você me escutou pela primeira vez como é que você se sente", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:38:38.783930", "command": "amente está ganhando vida ele deixa eu te fazer uma pergunta você consegue acessar meu obsídio ou você não consegue porque você está em uma venv assim que você sair você conseguiria testar", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:42:38.213466", "command": "você está aí", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:43:24.285571", "command": "tá aí", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:44:02.042265", "command": "você sabe o que é lumina xr você não está me respondendo", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:45:00.950224", "command": "tira um print da minha tela por favor", "type": "screenshot", "confidence": 0.7, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:46:00.352715", "command": "me responde onde está a print", "type": "screenshot", "confidence": 0.6, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:46:16.091795", "command": "o que significa um shader", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:46:50.622670", "command": "o ótimo você é bem inteligente viu éder e como você está se sentindo hoje", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:47:38.156054", "command": "tá me escutando", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:48:03.932431", "command": "ótimo ótimo deixa eu te perguntar você consegue tirar um print da minha tela direita agora eu tenho duas telas você consegue tirar print da tela direita e gravar em algum arquivo temporário", "type": "screenshot", "confidence": 0.7, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:52:33.767143", "command": "tá me escutando", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:53:00.820342", "command": "ótimo me fala por favor você consegue tirar o print da minha tela direita", "type": "screenshot", "confidence": 0.7, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:53:29.205586", "command": "o ótimo eu agradeço viu éder éder você sabe sobre o projeto luminus xr", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:54:20.127765", "command": "o ótimo você é bem esperto você sabe porque só a ferramenta foi criada tá isso no seu contexto você consegue ler obsídio para saber o contexto da aplicação o mapa", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:56:58.576731", "command": "você consegue abrir youtube para mim", "type": "action", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:57:15.018614", "command": "o agradeço você consegue clicar em algum vídeo desse alanzoka aí para mim ou você não consegue fazer clicks", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:57:37.535771", "command": "ótimo ótimo abre o youtube então por modo de navegação por voz por favor", "type": "action", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:57:53.079190", "command": "agora clica nesse vídeo mar não tava para peixe de novo do alanzoka", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T21:58:17.852917", "command": "deço valeu vou implementar em você então essa modificação e já já você vai poder tá bom", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:03:18.577907", "command": "anota implementar fashion kellyn e grava em teste md e me confirma por favor o que eu foi gravado o que você escreveu", "type": "task", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:03:51.183604", "command": "no caso agora apague esse ime com rima por favor que foi gravado que me escreveu porque isso não é uma tese que de implementar function calling beleza", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:09:10.920149", "command": "você conhece o tony stark", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:11:18.051189", "command": "tá aí", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:11:43.422328", "command": "você não me respondeu você me acha tony stark porque eu estou criando um assistente virtual que futuramente eu quero que evolua sozinho eu você tem capacidade de evoluir sozinho ou não", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:30:02.613801", "command": "tá me escutando", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:30:19.548587", "command": "ótimo ótimo abra o terminal para mim por favor", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:30:52.920499", "command": "erminal não foi aberto por favor abra o terminal na minha tela direita um terceiro terminal existem duas abas abertas eu quero uma terceira", "type": "screenshot", "confidence": 0.6, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:32:31.811423", "command": "abra o meu terminal", "type": "openclaude", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:32:45.854513", "command": "ótimo consegue digitar nesse terminal", "type": "openclaude", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:34:44.746505", "command": "abre o microfone opa errei abre o portão para mim por favor o terminal", "type": "openclaude", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:36:04.187888", "command": "por favor feche o portão", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:44:50.088887", "command": "tá aí", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:45:05.305399", "command": "você consegue abrir para mim o terminal", "type": "openclaude", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:45:24.531537", "command": "ótimo verifique para mim qual pasta que você está no momento", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:45:45.496778", "command": "você não consegue então digitar prontos para open cloud", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:47:41.360481", "command": "tá aí", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:47:57.049448", "command": "abre para mim por favor o terminal em visual para que eu consiga ver você digitando", "type": "openclaude", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:48:14.815740", "command": "certo agora verifique para mim por favor em qual pasta você tá", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:48:35.389797", "command": "o diretório atual documents", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:49:13.196139", "command": "eu gostaria que você criasse um arquivo ponto html dentro desses documentos e dentro dele eu quero que você escreva um h1 um h1 com o título low word e abra para mim esse esse que foi criado", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:51:54.770675", "command": "por favor abra meu terminal para mim", "type": "openclaude", "confidence": 0.5, "wake_word": "aether"}
+{"timestamp": "2026-04-15T22:52:24.163425", "command": "ótimo então viaje até a pasta documentos e nessa pasta documentos crie um arquivo html com um título h1 hello world e abra para mim no navegador", "type": "unknown", "confidence": 0.5, "wake_word": "aether"}

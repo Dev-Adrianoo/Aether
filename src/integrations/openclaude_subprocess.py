@@ -116,6 +116,39 @@ class OpenClaudeSubprocess:
 
         return ""
 
+    def run_visible(self, prompt: str, working_dir: Optional[str] = None):
+        """
+        Singleton: reutiliza terminal aberto ou abre um novo.
+        Escreve o prompt num arquivo temporário e passa via stdin — evita erro de parsing.
+        """
+        import tempfile, os
+
+        cwd = working_dir or str(Path.home() / "Documents")
+
+        # Garante que o cwd existe e é uma pasta real (evita "navegador padrão" virar path)
+        cwd_path = Path(cwd)
+        if not cwd_path.exists() or not cwd_path.is_dir():
+            cwd = str(Path.home() / "Documents")
+
+        # Salva prompt em arquivo temporário para evitar problemas de escaping
+        tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8')
+        tmp.write(prompt)
+        tmp.close()
+
+        # Singleton: fecha terminal anterior se ainda aberto
+        if self._terminal_proc and self._terminal_proc.poll() is None:
+            self._terminal_proc.terminate()
+            self._terminal_proc = None
+
+        ps_cmd = (
+            f'node "{OPENCLAUDE_BIN}" '
+            f'--dangerously-skip-permissions '
+            f'-p (Get-Content -Raw "{tmp.name}")'
+        )
+        cmd = f'start powershell -NoExit -WorkingDirectory "{cwd}" -Command "{ps_cmd}"'
+        self._terminal_proc = subprocess.Popen(cmd, shell=True)
+        logger.info(f"OpenClaude visível (singleton) em: {cwd}")
+
     def show_terminal(self, shell: str = "powershell"):
         """
         Abre o OpenClaude em uma janela de terminal visível.

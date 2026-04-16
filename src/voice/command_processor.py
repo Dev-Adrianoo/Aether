@@ -173,7 +173,8 @@ class CommandProcessor:
         text_lower = text.lower()
 
         command_patterns = {
-            # openclaude ANTES de action e screenshot — evita conflito com "abre" e "tela"
+            # code_agent e openclaude ANTES de action/screenshot — evita conflitos
+            "code_agent": ["código", "codigo", "programa", "cria arquivo", "desenvolve", "refatora", "implementa", "escreve o código", "faz o código"],
             "openclaude": ["terminal", "openclaude", "open claude"],
             "screenshot": ["captura tela", "tira print", "tira screenshot", "screenshot", "mostra a tela", "print da tela", "captura a tela"],
             "stop": ["para tudo", "pare tudo", "encerra", "sai agora", "fechar tudo", "stop"],
