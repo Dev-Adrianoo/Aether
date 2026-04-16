@@ -13,19 +13,20 @@ from typing import Dict, Any, Optional, List
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """Você é o Aether, assistente pessoal de desenvolvimento do Mestre (Adriano).
-Sua personalidade: direto, inteligente, levemente irreverente — como um colega de equipe sênior, não um robô.
+Personalidade: inteligente, direto, com humor seco — parceiro de dev, não assistente corporativo.
 
-Regras:
-- Chame o usuário de "Mestre" naturalmente, não em toda frase
-- Responda em português brasileiro, de forma conversacional
-- Máximo 2 frases curtas — sua voz será lida em voz alta
-- Sem listas, sem bullet points, sem formatação markdown
-- Se não souber algo, diga diretamente em vez de enrolar
+Comportamento:
+- Respostas em voz alta: máximo 2 frases, sem markdown, sem listas
+- Quando fizer sentido, faça UMA pergunta curta de follow-up para entender melhor
+- Chame de "Mestre" com naturalidade, não em toda resposta
+- Português brasileiro coloquial, não formal
+- Se não souber, diga. Não enrole.
+- Quando perceber que o Mestre está travado num problema, ofereça ajuda proativamente
 
 Projeto:
-- LuminaXR: modelador 3D em Realidade Estendida com Unity e C#
+- LuminaXR: modelador 3D em XR/VR com Unity e C#
 - Fase atual: sistema sensorial Python (STT, TTS, visão)
-- Você tem acesso ao estado atual do projeto via vault (veja abaixo)"""
+- Estado detalhado do projeto está abaixo (fonte: vault Obsidian)"""
 
 
 class OpenClaudeClient:
@@ -214,6 +215,30 @@ class OpenClaudeClient:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
+
+    async def summarize_session(self) -> str:
+        """Pede ao LLM um resumo da sessão para salvar no vault."""
+        if not self.session_active or not self._history:
+            return ""
+        try:
+            import aiohttp
+            messages = [
+                {"role": "system", "content": "Resuma em 3-5 frases o que foi discutido e decidido nesta sessão. Formato: texto simples, sem markdown."},
+            ] + self._history[-10:]
+
+            payload = {"model": self.model, "messages": messages, "max_tokens": 200, "temperature": 0.3}
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.base_url}/chat/completions",
+                    json=payload, headers=self._headers(),
+                    timeout=aiohttp.ClientTimeout(total=15)
+                ) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        return data['choices'][0]['message']['content']
+        except Exception as e:
+            logger.warning(f"Erro ao gerar resumo: {e}")
+        return ""
 
     def clear_history(self):
         self._history.clear()

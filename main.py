@@ -178,12 +178,30 @@ class AetherSensorySystem:
 
     async def shutdown(self):
         self.running = False
+        await self._save_session_summary()
         for module in self.modules.values():
             if hasattr(module, 'stop'):
                 await module.stop()
             elif hasattr(module, 'shutdown'):
                 await module.shutdown()
         print("\nAether encerrado.")
+
+    async def _save_session_summary(self):
+        try:
+            integration = self.modules.get('integration')
+            brain = self.modules.get('brain')
+            if not integration or not brain:
+                return
+            summary = await integration.summarize_session()
+            if summary:
+                await brain.save_interaction({
+                    'type': 'session_summary',
+                    'summary': summary,
+                    'timestamp': datetime.now().isoformat()
+                })
+                print(f"Sessão resumida e salva no vault.")
+        except Exception as e:
+            logger.warning(f"Erro ao salvar resumo da sessão: {e}")
 
 
 async def main():
