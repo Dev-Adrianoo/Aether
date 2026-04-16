@@ -54,6 +54,9 @@ class AetherSensorySystem:
                 logger.info("[OK] OpenClaude conectado e pronto para conversar")
             else:
                 logger.warning("[WARN] OpenClaude em modo offline")
+                await self.modules['speech'].speak(
+                    "Atenção: sem conexão com o LLM. Conversa livre indisponível."
+                )
 
             self._setup_callbacks()
             logger.info("Todos os módulos inicializados com sucesso")
