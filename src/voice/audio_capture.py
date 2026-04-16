@@ -48,7 +48,7 @@ class SoundDeviceCapture(AudioCapture):
             import io
             import wave
 
-            # Capturar áudio
+            loop = asyncio.get_event_loop()
             audio_data = sd.rec(
                 int(duration * self.sample_rate),
                 samplerate=self.sample_rate,
@@ -56,18 +56,24 @@ class SoundDeviceCapture(AudioCapture):
                 dtype=np.int16,
                 device=self.device
             )
-            sd.wait()
+            await loop.run_in_executor(None, sd.wait)
 
-            # Converter para bytes WAV
             buffer = io.BytesIO()
             with wave.open(buffer, 'wb') as wav_file:
                 wav_file.setnchannels(self.channels)
-                wav_file.setsampwidth(2)  # 16-bit = 2 bytes
+                wav_file.setsampwidth(2)
                 wav_file.setframerate(self.sample_rate)
                 wav_file.writeframes(audio_data.tobytes())
 
             return buffer.getvalue()
 
+        except asyncio.CancelledError:
+            try:
+                import sounddevice as sd
+                sd.stop()
+            except Exception:
+                pass
+            raise
         except ImportError:
             logger.error("sounddevice não instalado")
             return None
@@ -81,10 +87,12 @@ class SoundDeviceCapture(AudioCapture):
 
         while self.running:
             try:
-                audio_bytes = await self.capture_audio(5.0)  # 5 segundos
+                audio_bytes = await self.capture_audio(5.0)
                 if audio_bytes and self.running:
                     await callback(audio_bytes)
 
+            except asyncio.CancelledError:
+                break
             except Exception as e:
                 logger.error(f"Erro no loop de captura: {e}")
                 await asyncio.sleep(1)
@@ -92,6 +100,11 @@ class SoundDeviceCapture(AudioCapture):
     async def stop(self):
         """Para a captura"""
         self.running = False
+        try:
+            import sounddevice as sd
+            sd.stop()
+        except Exception:
+            pass
 
 class PyAudioCapture(AudioCapture):
     """Implementação usando PyAudio (fallback)"""
