@@ -39,6 +39,7 @@ class OpenClaudeClient:
         self.session_active = False
         self._history: List[Dict[str, str]] = []
         self._max_history = 10
+        self._system_prompt = SYSTEM_PROMPT
 
         logger.info("OpenClaudeClient inicializado")
 
@@ -69,6 +70,10 @@ class OpenClaudeClient:
 
             if await self._test_connection():
                 self.session_active = True
+                self._load_vault_context(os.getenv(
+                    'OBSIDIAN_DEV_VAULT',
+                    r'C:\Users\Adria\Documents\Documentation\Dev-Aether-logs'
+                ))
                 logger.info("[OK] OpenClaude conectado e pronto")
                 return True
 
@@ -79,6 +84,24 @@ class OpenClaudeClient:
             logger.error(f"Erro na inicialização do OpenClaudeClient: {e}")
             self.session_active = False
             return False
+
+    def _load_vault_context(self, vault_path: str):
+        """Lê MAPA.md do vault e injeta no system prompt."""
+        import os
+        mapa = os.path.join(vault_path, 'MAPA.md')
+        try:
+            with open(mapa, encoding='utf-8') as f:
+                content = f.read()
+            self._system_prompt = (
+                SYSTEM_PROMPT
+                + "\n\n--- ESTADO ATUAL DO PROJETO (fonte: MAPA.md) ---\n"
+                + content
+            )
+            print(f"[OK] Vault carregado ({len(content)} chars)")
+        except FileNotFoundError:
+            logger.warning(f"MAPA.md não encontrado em {mapa}")
+        except Exception as e:
+            logger.warning(f"Erro ao ler vault: {e}")
 
     async def _test_connection(self) -> bool:
         try:
@@ -124,7 +147,7 @@ class OpenClaudeClient:
 
             self._history.append({"role": "user", "content": question})
 
-            messages = [{"role": "system", "content": SYSTEM_PROMPT}] + self._history
+            messages = [{"role": "system", "content": self._system_prompt}] + self._history
 
             payload = {
                 "model": self.model,
