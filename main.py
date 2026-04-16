@@ -194,12 +194,13 @@ class AetherSensorySystem:
                 return
             summary = await integration.summarize_session()
             if summary:
+                integration._append_session_to_recentes(summary)
                 await brain.save_interaction({
                     'type': 'session_summary',
                     'summary': summary,
                     'timestamp': datetime.now().isoformat()
                 })
-                print(f"Sessão resumida e salva no vault.")
+                print("Sessão resumida e salva no vault.")
         except Exception as e:
             logger.warning(f"Erro ao salvar resumo da sessão: {e}")
 

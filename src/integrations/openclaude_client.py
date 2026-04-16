@@ -89,22 +89,36 @@ class OpenClaudeClient:
             return False
 
     def _load_vault_context(self, vault_path: str):
-        """Lê MAPA.md do vault e injeta no system prompt."""
+        """
+        Injeta MAPA.md + últimas 5 sessões no system prompt.
+        Teto fixo de tokens independente do tamanho do histórico.
+        """
         import os
+
+        sections = []
+
         mapa = os.path.join(vault_path, 'MAPA.md')
         try:
             with open(mapa, encoding='utf-8') as f:
-                content = f.read()
-            self._system_prompt = (
-                SYSTEM_PROMPT
-                + "\n\n--- ESTADO ATUAL DO PROJETO (fonte: MAPA.md) ---\n"
-                + content
-            )
-            print(f"[OK] Vault carregado ({len(content)} chars)")
+                sections.append("--- ESTADO DO PROJETO (MAPA.md) ---\n" + f.read())
         except FileNotFoundError:
             logger.warning(f"MAPA.md não encontrado em {mapa}")
-        except Exception as e:
-            logger.warning(f"Erro ao ler vault: {e}")
+
+        recentes = os.path.join(vault_path, 'SESSOES_RECENTES.md')
+        try:
+            with open(recentes, encoding='utf-8') as f:
+                sections.append("--- SESSÕES RECENTES ---\n" + f.read())
+        except FileNotFoundError:
+            pass  # ainda não existe, normal na primeira sessão
+
+        if sections:
+            context = "\n\n".join(sections)
+            self._system_prompt = SYSTEM_PROMPT + "\n\n" + context
+            self._vault_path = vault_path
+            total = sum(len(s) for s in sections)
+            print(f"[OK] Vault carregado ({total} chars)")
+        else:
+            self._vault_path = vault_path
 
     async def _test_connection(self) -> bool:
         try:
@@ -215,6 +229,28 @@ class OpenClaudeClient:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
+
+    def _append_session_to_recentes(self, summary: str, max_sessions: int = 5):
+        """Salva resumo no arquivo rolling SESSOES_RECENTES.md, mantendo só os últimos N."""
+        import os
+        vault = getattr(self, '_vault_path', None)
+        if not vault or not summary:
+            return
+        path = os.path.join(vault, 'SESSOES_RECENTES.md')
+        from datetime import datetime
+        entry = f"### {datetime.now().strftime('%Y-%m-%d %H:%M')}\n{summary}\n"
+        try:
+            existing = []
+            if os.path.exists(path):
+                with open(path, encoding='utf-8') as f:
+                    raw = f.read()
+                existing = [s for s in raw.split('### ') if s.strip()]
+            existing.append(entry.lstrip('### '))
+            kept = existing[-max_sessions:]
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(''.join(f'### {s}' for s in kept))
+        except Exception as e:
+            logger.warning(f"Erro ao salvar SESSOES_RECENTES: {e}")
 
     async def summarize_session(self) -> str:
         """Pede ao LLM um resumo da sessão para salvar no vault."""
