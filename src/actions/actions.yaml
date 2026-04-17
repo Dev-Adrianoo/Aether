@@ -1,0 +1,32 @@
+actions:
+  youtube:
+    keywords: [youtube]
+    type: url
+    target: https://www.youtube.com
+
+  spotify:
+    keywords: [spotify, música]
+    type: exe
+    target: spotify
+    fallback_url: https://open.spotify.com
+
+  vscode:
+    keywords: [vscode, vs code, código]
+    type: exe
+    target: code
+
+  unity:
+    keywords: [unity]
+    type: exe
+    # target null = path desconhecido, self-learning vai preencher
+    target: null
+    learned: false
+
+  obsidian:
+    keywords: [obsidian]
+    type: exe_vault
+    # abre com dev_vault_path como argumento — loader injeta via config
+    candidates:
+      - C:/Users/Adria/AppData/Local/Programs/Obsidian/Obsidian.exe
+      - C:/Users/Adria/AppData/Local/Obsidian/Obsidian.exe
+      - C:/Program Files/Obsidian/Obsidian.exe

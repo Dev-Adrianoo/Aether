@@ -329,7 +329,7 @@ Retorne APENAS o JSON."""
             await self._speak(f"Terminal aberto em {shell}.")
 
     async def _handle_action(self, command_text: str, confidence: float):
-        from src.actions.registry import dispatch
+        from src.actions.action_loader import dispatch
         feedback = dispatch(command_text)
         if feedback:
             await self._speak(feedback)
