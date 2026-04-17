@@ -17,7 +17,7 @@ classification_prompt: |
   - terminal: abrir ou fechar terminal → {"type":"terminal","action":"open","shell":"powershell"}  (action: open|close, shell: powershell|cmd)
   - task: anotar tarefa → {"type":"task","text":"texto da tarefa"}
   - code_agent: criar/editar arquivos, executar scripts, rodar código, navegar pastas → {"type":"code_agent","prompt":"prompt técnico claro"}
-  - correction: microfone transcreveu errado e usuário corrige O QUE ELE DISSE → {"type":"correction","wrong":"texto errado","right":"texto correto"}
+  - correction: usuário corrige explicitamente o que o microfone transcreveu — APENAS quando diz literalmente "não, eu disse X", "você entendeu errado", "o microfone errou", "corrija para X" → {"type":"correction","wrong":"texto errado","right":"texto correto"}
   - conversation: conversa geral → {"type":"conversation"}
 
   Regras:
