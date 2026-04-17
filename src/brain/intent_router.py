@@ -99,6 +99,9 @@ class IntentRouter:
         elif intent_type == "code_agent":
             await self._handle_code_agent(intent.get("prompt", command_text), confidence)
 
+        elif intent_type == "ui_action":
+            await self._handle_ui_action(intent.get("target", ""), confidence)
+
         elif intent_type == "correction":
             wrong = intent.get("wrong", "").strip()
             right = intent.get("right", "").strip()
@@ -260,6 +263,18 @@ class IntentRouter:
         already_open = oc._terminal_proc and oc._terminal_proc.poll() is None
         oc.show_terminal(shell=shell)
         await self._speak("Terminal já está aberto." if already_open else f"Terminal aberto em {shell}.")
+
+    async def _handle_ui_action(self, target: str, confidence: float):
+        if not target:
+            await self._speak("Qual elemento devo clicar?")
+            return
+        await self._speak(f"Procurando '{target}' na tela.")
+        from src.actions.ui_controller import find_and_click
+        result = await find_and_click(target)
+        if result.success:
+            await self._speak(f"Cliquei em {target}.")
+        else:
+            await self._speak(f"Não encontrei '{target}' na tela. {result.message}")
 
     async def _handle_conversation(self, command_text: str, confidence: float, model: Optional[str] = None):
         logger.debug(f"Conversa: {command_text}")
