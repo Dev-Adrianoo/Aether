@@ -25,6 +25,7 @@ class OpenClaudeConfig:
     api_key: str
     base_url: str
     model: str
+    bin_path: Path  # path do executável openclaude CLI
 
 @dataclass
 class GroqConfig:
@@ -118,10 +119,15 @@ class LuminaConfig:
         )
 
     def _load_openclaude_config(self) -> OpenClaudeConfig:
+        default_bin = (
+            r'C:\Users\Adria\AppData\Roaming\npm\node_modules'
+            r'\@gitlawb\openclaude\dist\cli.mjs'
+        )
         return OpenClaudeConfig(
             api_key=self._get_env('OPENCLAUDE_API_KEY', ''),
-            base_url=self._get_env('OPENCLAUDE_BASE_URL', 'https://api.openclaude.ai/v1'),
-            model=self._get_env('OPENCLAUDE_MODEL', 'claude-3-5-sonnet-20241022')
+            base_url=self._get_env('OPENCLAUDE_BASE_URL', 'https://api.deepseek.com/v1'),
+            model=self._get_env('OPENCLAUDE_MODEL', 'deepseek-chat'),
+            bin_path=Path(self._get_env('OPENCLAUDE_BIN', default_bin))
         )
 
     def _load_groq_config(self) -> GroqConfig:

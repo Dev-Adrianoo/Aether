@@ -11,12 +11,11 @@ import subprocess
 from pathlib import Path
 from typing import Callable, Optional
 
+from config import config
+
 logger = logging.getLogger(__name__)
 
-OPENCLAUDE_BIN = Path(
-    r"C:\Users\Adria\AppData\Roaming\npm\node_modules"
-    r"\@gitlawb\openclaude\dist\cli.mjs"
-)
+OPENCLAUDE_BIN = config.openclaude.bin_path
 
 
 class OpenClaudeSubprocess:

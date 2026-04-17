@@ -386,7 +386,8 @@ Retorne APENAS o JSON."""
 
     async def _save_correction_to_vault(self, wrong: str, right: str):
         """Registra correção de STT no vault Obsidian."""
-        vault = Path(r"C:\Users\Adria\Documents\Documentation\Dev-lumina-agent")
+        from config import config
+        vault = config.obsidian.dev_vault_path
         corrections_note = vault / "04_APRENDIZADOS" / "LEARN_STT_corrections.md"
         from datetime import datetime
         entry = f"- `{wrong}` → `{right}`  <!-- {datetime.now().strftime('%Y-%m-%d %H:%M')} -->\n"
