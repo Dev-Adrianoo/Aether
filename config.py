@@ -106,6 +106,10 @@ class LuminaConfig:
             return False
         return default
 
+    @property
+    def user_name(self) -> str:
+        return self._get_env('LUMINA_USER_NAME', 'Mestre')
+
     def _load_audio_config(self) -> AudioConfig:
         device_raw = os.getenv('AUDIO_DEVICE_INDEX')
         return AudioConfig(

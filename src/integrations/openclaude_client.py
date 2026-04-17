@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Você é o Lumina — parceiro de dev do Adriano, não um assistente.
+_SYSTEM_PROMPT_TEMPLATE = """Você é o Lumina — parceiro de dev do {user_name}, não um assistente.
 
 Personalidade:
 - Curioso e direto. Quando algo te interessa, comenta. Quando algo parece errado, fala.
@@ -79,7 +79,7 @@ class OpenClaudeClient:
         self.session_active = False
         self._history: List[Dict[str, str]] = []
         self._max_history = 10
-        self._system_prompt = SYSTEM_PROMPT
+        self._system_prompt = _SYSTEM_PROMPT_TEMPLATE  # formatado em initialize()
 
         logger.info("OpenClaudeClient inicializado")
 
@@ -96,6 +96,8 @@ class OpenClaudeClient:
                 return False
 
             logger.info(f"OpenClaude configurado: {self.base_url}, modelo: {self.model}")
+
+            self._system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(user_name=config.user_name)
 
             if await self._test_connection():
                 self.session_active = True
