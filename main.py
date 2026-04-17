@@ -179,31 +179,9 @@ class LuminaSensorySystem:
         self._last_recognized = command_text
 
         llm = self.modules['integration']
-        speech = self.modules['speech']
 
-        classification_prompt = f"""Você recebe texto de comando de voz (pode estar garrafado pelo STT).
-Analise e retorne APENAS JSON válido com a intenção. Nenhum texto adicional.
-
-Tipos disponíveis:
-- screenshot: capturar tela → {{"type":"screenshot","monitor":1}}  (monitor: 1=esquerda/padrão, 2=direita/segundo)
-- action: abrir aplicativo → {{"type":"action","app":"youtube"}}  (apps válidos: youtube, spotify, vscode, unity, obsidian)
-- terminal: abrir ou fechar terminal → {{"type":"terminal","action":"open","shell":"powershell"}}  (action: open|close, shell: powershell|cmd)
-- task: anotar tarefa → {{"type":"task","text":"texto da tarefa"}}
-- code_agent: criar/editar arquivos, executar scripts, rodar código, navegar pastas → {{"type":"code_agent","prompt":"prompt técnico claro"}}
-- correction: microfone transcreveu errado e usuário corrige O QUE ELE DISSE → {{"type":"correction","wrong":"texto errado","right":"texto correto"}}
-- conversation: conversa geral → {{"type":"conversation","response":"resposta em 1-2 frases coloquiais"}}
-
-Regras:
-- screenshot: qualquer pedido de capturar/fotografar/printar/foto da tela
-- action: abrir apps por nome (youtube, spotify, vscode, unity, obsidian)
-- terminal: abrir/fechar cmd, powershell, opencloud, terminal — NÃO use code_agent para isso
-- code_agent: tarefas no sistema de arquivos ou execução de código — NÃO use para abrir terminal simples
-- correction: SOMENTE quando o usuário diz que o MICROFONE errou ("não, eu disse X", "você entendeu errado, falei X"). NÃO use quando reclama do comportamento da Lumina. Use a fala anterior como "wrong": "{last}"
-- conversation: perguntas, reclamações de comportamento, comentários, qualquer coisa que não se encaixe acima
-
-Texto recebido: "{command_text}"
-
-Retorne APENAS o JSON."""
+        from src.intents.intent_loader import build_prompt
+        classification_prompt = build_prompt(command_text, last_recognized=last)
 
         raw = await llm.classify(classification_prompt)
         if not raw:
