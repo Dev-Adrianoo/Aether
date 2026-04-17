@@ -10,10 +10,11 @@ edge-tts>=6.1.9
 pydub>=0.25.1
 playsound==1.2.2
 
-# Visão
+# Visão e controle de UI
 mss>=9.0.1
 Pillow>=10.0.0
-pytesseract>=0.3.10  # requer tesseract-ocr instalado no sistema
+pytesseract>=0.3.10  # requer tesseract-ocr instalado no sistema (winget install UB-Mannheim.TesseractOCR)
+pyautogui>=0.9.54
 
 # Integração e utilitários
 aiohttp>=3.9.0
