@@ -27,6 +27,11 @@ class OpenClaudeConfig:
     model: str
 
 @dataclass
+class GroqConfig:
+    """Configurações da API Groq (STT Whisper)"""
+    api_key: str
+
+@dataclass
 class ObsidianConfig:
     """Configurações do Obsidian"""
     vault_path: Path       # vault geral (ObsidianManager / logs)
@@ -66,6 +71,7 @@ class LuminaConfig:
 
         self.audio = self._load_audio_config()
         self.openclaude = self._load_openclaude_config()
+        self.groq = self._load_groq_config()
         self.obsidian = self._load_obsidian_config()
         self.tts = self._load_tts_config()
         self.vision = self._load_vision_config()
@@ -116,6 +122,11 @@ class LuminaConfig:
             api_key=self._get_env('OPENCLAUDE_API_KEY', ''),
             base_url=self._get_env('OPENCLAUDE_BASE_URL', 'https://api.openclaude.ai/v1'),
             model=self._get_env('OPENCLAUDE_MODEL', 'claude-3-5-sonnet-20241022')
+        )
+
+    def _load_groq_config(self) -> GroqConfig:
+        return GroqConfig(
+            api_key=self._get_env('GROQ_API_KEY', '')
         )
 
     def _load_obsidian_config(self) -> ObsidianConfig:

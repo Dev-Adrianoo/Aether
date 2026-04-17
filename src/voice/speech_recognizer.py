@@ -24,15 +24,18 @@ class SpeechRecognizer:
     def _init_groq(self):
         try:
             from groq import Groq
-            api_key = os.getenv("GROQ_API_KEY", "")
+            from config import config
+            api_key = config.groq.api_key
             if api_key:
                 self._groq_client = Groq(api_key=api_key)
                 self._groq_available = True
                 logger.info("Groq Whisper disponível")
             else:
                 logger.warning("GROQ_API_KEY não configurada — usando Google Speech")
+                print("[WARN] GROQ_API_KEY ausente no .env — STT caiu pro Google Speech")
         except ImportError:
             logger.warning("groq não instalado — usando Google Speech. Instale: pip install groq")
+            print("[WARN] pacote groq não instalado — STT caiu pro Google Speech")
 
     async def recognize(self, audio_bytes: bytes) -> Optional[str]:
         if self._groq_available:
