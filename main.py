@@ -8,7 +8,6 @@ import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 # Arquivo: tudo em DEBUG para diagnóstico
 _file_handler = logging.FileHandler('lumina.log')
@@ -30,11 +29,9 @@ class LuminaSensorySystem:
         self.base_dir = Path(__file__).parent
         self.running = False
         self.modules = {}
-        self._last_recognized = ""
-        self._last_code_action = ""  # última tarefa enviada ao OpenClaude — contexto de sessão
-        self._pending_learn: Optional[str] = None  # app aguardando confirmação de self-learning
         from src.voice.stt_corrector import STTCorrector
         self.stt_corrector = STTCorrector()
+        self.router = None
 
     async def initialize(self):
         try:
@@ -43,6 +40,7 @@ class LuminaSensorySystem:
             from src.voice.tts_engine import TTSEngine
             from src.integrations.openclaude_client import OpenClaudeClient
             from src.brain.obsidian_manager import ObsidianManager
+            from src.brain.intent_router import IntentRouter
             from config import config
 
             print("Lumina iniciando...")
@@ -79,6 +77,16 @@ class LuminaSensorySystem:
                     "Atenção: sem conexão com o LLM. Conversa livre indisponível."
                 )
 
+            self.router = IntentRouter(
+                speak=self._speak,
+                modules=self.modules,
+                stt_corrector=self.stt_corrector,
+                base_dir=self.base_dir,
+                screenshot_handler=self._handle_screenshot_command,
+                save_correction_fn=self._save_correction_to_vault,
+                log_fn=self._log_to_obsidian,
+            )
+
             self._setup_callbacks()
             return True
 
@@ -111,277 +119,37 @@ class LuminaSensorySystem:
         hearing.register_command_handler("stop", self._handle_stop_command)
         hearing.register_command_handler("help", self._handle_help_command)
         hearing.register_command_handler("status", self._handle_status_command)
-        hearing.register_command_handler("action", self._handle_action)
-        hearing.register_command_handler("task", self._handle_task_command)
-        hearing.register_command_handler("llm_route", self._handle_llm_route)
-        hearing.register_command_handler("openclaude", self._handle_openclaude_terminal)
-        hearing.register_command_handler("unknown", self._handle_llm_route)
+        hearing.register_command_handler("action", self.router.route)
+        hearing.register_command_handler("task", self.router.route)
+        hearing.register_command_handler("llm_route", self.router.route)
+        hearing.register_command_handler("openclaude", self.router.route)
+        hearing.register_command_handler("unknown", self.router.route)
 
     def _parse_monitor(self, command_text: str) -> int:
         text = command_text.lower()
         if any(w in text for w in ["direita", "segunda", "monitor 2", "tela 2", "dois"]):
             return 2
-        if any(w in text for w in ["esquerda", "primeira", "monitor 1", "tela 1", "um"]):
-            return 1
         return 1
 
     async def _handle_screenshot_command(self, command_text: str, confidence: float):
         monitor = self._parse_monitor(command_text)
-        label = f"monitor {monitor}"
         analysis = await self.modules['vision'].capture_and_analyze(
             reason='voice_command', monitor_index=monitor
         )
         if analysis and analysis.get('filepath'):
             w, h = analysis.get('dimensions', (0, 0))
             await self._speak(
-                f"Print do {label} capturado. {w}x{h} pixels, salvo em screenshots."
+                f"Print do monitor {monitor} capturado. {w}x{h} pixels, salvo em screenshots."
             )
         else:
             await self._speak("Erro ao capturar tela.")
-
-    async def _handle_task_command(self, command_text: str, confidence: float):
-        from src.actions.system_actions import write_claude_task
-        keywords = ["anota", "anote", "tarefa", "lembra", "lembre", "adiciona", "adicione", "registra", "registre"]
-        task_text = command_text.lower()
-        for kw in keywords:
-            if kw in task_text:
-                idx = task_text.find(kw) + len(kw)
-                task_text = command_text[idx:].strip(" :,-")
-                break
-        if task_text:
-            write_claude_task(task_text)
-            response = await self.modules['integration'].ask_question(
-                f"Acabei de anotar a tarefa: '{task_text}'. Confirme de forma natural e breve."
-            )
-            await self._speak(response or "Anotado.")
-        else:
-            await self._speak("Qual é a tarefa que devo anotar?")
-
-    async def _handle_llm_route(self, command_text: str, confidence: float):
-        """
-        Classificador LLM: uma chamada DeepSeek entende a intenção e roteia.
-        Sem keywords. Qualquer fala natural funciona.
-        """
-        import json as _json
-
-        # Self-learning pendente — essa fala é a resposta de confirmação
-        if self._pending_learn:
-            await self._confirm_learn_app(command_text, confidence)
-            return
-
-        # Aplica correções conhecidas antes de processar
-        corrected = self.stt_corrector.apply(command_text)
-        if corrected != command_text:
-            print(f"[STT corrigido] '{command_text}' → '{corrected}'")
-        command_text = corrected
-
-        last = self._last_recognized
-        self._last_recognized = command_text
-
-        llm = self.modules['integration']
-
-        from src.intents.intent_loader import build_prompt
-        classification_prompt = build_prompt(command_text, last_recognized=last)
-
-        raw = await llm.classify(classification_prompt)
-        if not raw:
-            await self._speak("Não entendi. Pode repetir?")
-            return
-
-        # Extrai JSON da resposta (LLM às vezes adiciona markdown)
-        try:
-            raw_clean = raw.strip().strip("```json").strip("```").strip()
-            intent = _json.loads(raw_clean)
-        except Exception:
-            # JSON inválido ou truncado — trata como conversa normal
-            await self._handle_conversation(command_text, confidence)
-            return
-
-        intent_type = intent.get("type", "conversation")
-
-        if intent_type == "screenshot":
-            monitor = intent.get("monitor", 1)
-            fake_text = "direita" if monitor == 2 else "esquerda"
-            await self._handle_screenshot_command(fake_text, confidence)
-
-        elif intent_type == "action":
-            app = intent.get("app", "")
-            await self._handle_action(app, confidence)
-
-        elif intent_type == "terminal":
-            action = intent.get("action", "open")
-            shell = intent.get("shell", "powershell")
-            await self._handle_openclaude_terminal(
-                f"{'feche' if action == 'close' else 'abre'} {shell}", confidence
-            )
-
-        elif intent_type == "task":
-            text = intent.get("text", "")
-            await self._handle_task_command(text, confidence)
-
-        elif intent_type == "code_agent":
-            prompt = intent.get("prompt", command_text)
-            await self._handle_code_agent(prompt, confidence)
-
-        elif intent_type == "correction":
-            wrong = intent.get("wrong", "").strip()
-            right = intent.get("right", "").strip()
-            if wrong and right:
-                self.stt_corrector.add(wrong, right)
-                await self._save_correction_to_vault(wrong, right)
-                await self._speak(f"Entendido. Vou lembrar que '{wrong}' é '{right}'.")
-            else:
-                await self._speak("Não entendi a correção. Pode repetir?")
-
-        elif intent_type == "conversation":
-            response = intent.get("response", "")
-            if response:
-                await self._speak(response)
-            else:
-                await self._handle_conversation(command_text, confidence)
-
-        else:
-            await self._handle_conversation(command_text, confidence)
-
-    async def _handle_code_agent(self, command_text: str, confidence: float):
-        """Recebe prompt ja limpo do LLM router e envia pro OpenClaude."""
-        oc = self.modules.get('openclaude')
-        if not oc:
-            await self._speak("OpenClaude nao esta disponivel.")
-            return
-
-        lumina_dir = str(Path(__file__).parent)
-        lumina_keywords = ["lumina", "voce mesmo", "em voce", "no seu codigo", "obsidian", "vault", "nova acao", "system_actions", "registry"]
-        is_self = any(kw in command_text.lower() for kw in lumina_keywords)
-        working_dir = lumina_dir if is_self else str(Path.home() / "Documents")
-
-        # Instrui OpenClaude a executar diretamente sem pedir confirmação
-        prompt = (
-            "Execute a tarefa diretamente sem pedir confirmação nem fazer perguntas. "
-            "Não mostre design nem planejamento — só execute:\n\n"
-            + command_text
-        )
-
-        await self._speak("Entendido. Abrindo o terminal.")
-        oc.run_visible(prompt=prompt, working_dir=working_dir)
-        self._last_code_action = command_text
-        await self._speak("OpenClaude ta trabalhando. Acompanha no terminal.")
-
-        asyncio.create_task(self._monitor_openclaude_sentinel())
-
-    async def _apply_learned_path(self, app_name: str):
-        """Aguarda OpenClaude escrever o path e persiste no actions.yaml."""
-        learned_file = Path(__file__).parent / "data" / "learned_path.txt"
-        learned_file.unlink(missing_ok=True)
-
-        for _ in range(300):
-            await asyncio.sleep(1)
-            if learned_file.exists():
-                exe_path = learned_file.read_text(encoding="utf-8").strip()
-                learned_file.unlink(missing_ok=True)
-                if exe_path and Path(exe_path).exists():
-                    from src.actions.action_loader import learn
-                    learn(app_name, exe_path)
-                    await self._speak(f"Aprendi o caminho do {app_name}. Abrindo agora.")
-                    from src.actions.action_loader import dispatch
-                    dispatch(app_name)
-                else:
-                    await self._speak(f"OpenClaude não encontrou o {app_name}.")
-                return
-        await self._speak(f"Não recebi resposta sobre o {app_name}. Tenta de novo mais tarde.")
-
-    async def _monitor_openclaude_sentinel(self):
-        """Aguarda sentinel file do script e fala quando OpenClaude terminar."""
-        sentinel = Path(__file__).parent / "data" / "run" / "done.sentinel"
-        for _ in range(300):  # timeout: 5 min
-            await asyncio.sleep(1)
-            if sentinel.exists():
-                try:
-                    sentinel.unlink()
-                except OSError:
-                    pass
-                await self._speak("OpenClaude terminou. Confere o resultado no terminal.")
-                return
-        await self._speak("OpenClaude ainda ta rodando. Me chama quando terminar.")
-
-    async def _handle_openclaude_terminal(self, command_text: str, confidence: float):
-        oc = self.modules.get('openclaude')
-        if not oc:
-            await self._speak("OpenClaude não está disponível.")
-            return
-        text = command_text.lower()
-        fechar = any(w in text for w in ["esconde", "fecha", "feche", "oculta", "esconder"])
-        if fechar:
-            closed = oc.hide_terminal()
-            if closed:
-                await self._speak("Terminal fechado.")
-            else:
-                await self._speak("Não tenho nenhum terminal aberto. Só consigo fechar terminais que eu mesma abri.")
-            return
-
-        # Detecta qual shell o usuário quer
-        if "cmd" in text:
-            shell = "cmd"
-        elif any(w in text for w in ["powershell", "power shell", "posh"]):
-            shell = "powershell"
-        else:
-            shell = "powershell"
-
-        already_open = oc._terminal_proc and oc._terminal_proc.poll() is None
-        oc.show_terminal(shell=shell)
-        if already_open:
-            await self._speak("Terminal já está aberto.")
-        else:
-            await self._speak(f"Terminal aberto em {shell}.")
-
-    async def _handle_action(self, command_text: str, confidence: float):
-        from src.actions.action_loader import dispatch, UnknownTarget
-        result = dispatch(command_text)
-        if isinstance(result, UnknownTarget):
-            await self._handle_unknown_app(result.action_id)
-        elif result:
-            await self._speak(result)
-        else:
-            await self._handle_conversation(command_text, confidence)
-
-    async def _handle_unknown_app(self, app_name: str):
-        """Self-learning: app conhecido mas sem path — pede confirmação e aciona OpenClaude."""
-        await self._speak(f"{app_name} não tá cadastrado. Quer que eu procure no sistema?")
-
-        # Aguarda confirmação por voz (próxima fala capturada)
-        self._pending_learn = app_name
-
-    async def _confirm_learn_app(self, command_text: str, confidence: float):
-        """Handler chamado quando há um app pendente de self-learning."""
-        app_name = self._pending_learn
-        self._pending_learn = None
-
-        text = command_text.lower()
-        if any(w in text for w in ["sim", "pode", "vai", "yes", "claro", "bora", "ok"]):
-            oc = self.modules.get('openclaude')
-            if not oc:
-                await self._speak("OpenClaude não está disponível.")
-                return
-            prompt = (
-                f"Localize o executável (.exe) do aplicativo '{app_name}' neste sistema Windows. "
-                f"Quando encontrar, escreva APENAS o path completo no arquivo: "
-                f"{Path(__file__).parent / 'data' / 'learned_path.txt'}\n"
-                f"Não pergunte nada, não explique — só escreva o path no arquivo."
-            )
-            await self._speak(f"Procurando {app_name} no sistema.")
-            oc.run_visible(prompt=prompt)
-            asyncio.create_task(self._apply_learned_path(app_name))
-        else:
-            await self._speak("Tudo bem, fica pra depois.")
 
     async def _handle_stop_command(self, command_text: str, confidence: float):
         await self._speak("Encerrando")
         self.running = False
 
     async def _handle_status_command(self, command_text: str, confidence: float):
-        await self._speak(
-            "Online e funcionando. LLM conectado, voz ativa."
-        )
+        await self._speak("Online e funcionando. LLM conectado, voz ativa.")
 
     async def _handle_help_command(self, command_text: str, confidence: float):
         await self._speak(
@@ -389,46 +157,16 @@ class LuminaSensorySystem:
             "Posso capturar a tela, responder perguntas ou verificar meu status."
         )
 
-    async def _handle_conversation(self, command_text: str, confidence: float):
-        logger.debug(f"Conversa: {command_text}")
-        question = command_text
-        if self._last_code_action:
-            question = (
-                f"[Contexto: acabei de enviar ao OpenClaude a tarefa: '{self._last_code_action}'. "
-                f"O terminal está aberto e pode ainda estar executando.]\n\n{command_text}"
-            )
-        response = await self.modules['integration'].ask_question(question)
-        if not response:
-            await self._speak("Não consegui responder agora. Pode repetir?")
-            return
-
-        # LLM decidiu que é tarefa de execução — rota pro code_agent
-        if response.strip().startswith("CÓDIGO:"):
-            task = response.strip()[len("CÓDIGO:"):].strip()
-            await self._handle_code_agent(task, confidence)
-            return
-
-        await self._speak(response)
-        await self._log_to_obsidian({
-            'type': 'conversation',
-            'question': command_text,
-            'answer': response,
-            'confidence': confidence,
-            'timestamp': datetime.now().isoformat()
-        })
-
     async def _handle_screenshot(self, screenshot_data, analysis):
         logger.debug(f"Screenshot: {analysis.get('summary', '')}")
         if analysis.get('has_errors') or analysis.get('needs_attention'):
             await self.modules['integration'].send_visual_context(screenshot_data, analysis)
 
     async def _save_correction_to_vault(self, wrong: str, right: str):
-        """Registra correção de STT no vault Obsidian."""
         from config import config
         vault = config.obsidian.dev_vault_path
         corrections_note = vault / "04_APRENDIZADOS" / "LEARN_STT_corrections.md"
-        from datetime import datetime
-        entry = f"- `{wrong}` → `{right}`  <!-- {datetime.now().strftime('%Y-%m-%d %H:%M')} -->\n"
+        entry = f"- `{wrong}` -> `{right}`  <!-- {datetime.now().strftime('%Y-%m-%d %H:%M')} -->\n"
         if not corrections_note.exists():
             corrections_note.write_text("# Correções STT\n\nMapeamentos aprendidos automaticamente.\n\n", encoding="utf-8")
         with open(corrections_note, "a", encoding="utf-8") as f:
