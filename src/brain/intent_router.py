@@ -110,14 +110,11 @@ class IntentRouter:
                 await self._speak("Não entendi a correção. Pode repetir?")
 
         elif intent_type == "conversation":
-            response = intent.get("response", "")
-            if response:
-                await self._speak(response)
-            else:
-                await self._handle_conversation(
-                    command_text, confidence,
-                    model=model_for_intent("conversation")
-                )
+            # sempre passa pelo ask_question — classify não tem system prompt nem vault
+            await self._handle_conversation(
+                command_text, confidence,
+                model=model_for_intent("conversation")
+            )
 
         else:
             await self._handle_conversation(command_text, confidence)

@@ -18,7 +18,7 @@ classification_prompt: |
   - task: anotar tarefa → {"type":"task","text":"texto da tarefa"}
   - code_agent: criar/editar arquivos, executar scripts, rodar código, navegar pastas → {"type":"code_agent","prompt":"prompt técnico claro"}
   - correction: microfone transcreveu errado e usuário corrige O QUE ELE DISSE → {"type":"correction","wrong":"texto errado","right":"texto correto"}
-  - conversation: conversa geral → {"type":"conversation","response":"resposta em 1-2 frases coloquiais"}
+  - conversation: conversa geral → {"type":"conversation"}
 
   Regras:
   - screenshot: qualquer pedido de capturar/fotografar/printar/foto da tela
