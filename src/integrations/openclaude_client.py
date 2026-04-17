@@ -115,35 +115,44 @@ class OpenClaudeClient:
 
     def _load_vault_context(self, vault_path: str):
         """
-        Injeta MAPA.md + últimas 5 sessões no system prompt.
-        Teto fixo de tokens independente do tamanho do histórico.
+        MAPA.md vai para o system prompt (contexto estático do projeto).
+        SESSOES_RECENTES.md vai como mensagem sintetica no inicio do historico
+        — o LLM lembra o que foi discutido nas sessoes anteriores.
         """
         import os
 
-        sections = []
+        self._vault_path = vault_path
+        total = 0
 
         mapa = os.path.join(vault_path, 'MAPA.md')
         try:
             with open(mapa, encoding='utf-8') as f:
-                sections.append("--- ESTADO DO PROJETO (MAPA.md) ---\n" + f.read())
+                content = f.read()
+                self._system_prompt += "\n\n--- ESTADO DO PROJETO (MAPA.md) ---\n" + content
+                total += len(content)
         except FileNotFoundError:
             logger.warning(f"MAPA.md não encontrado em {mapa}")
 
         recentes = os.path.join(vault_path, 'SESSOES_RECENTES.md')
         try:
             with open(recentes, encoding='utf-8') as f:
-                sections.append("--- SESSÕES RECENTES ---\n" + f.read())
+                content = f.read().strip()
+                if content:
+                    # Injeta como primeiro par de mensagens no histórico
+                    self._history.insert(0, {
+                        "role": "user",
+                        "content": "Antes de começarmos, aqui está o resumo das sessões anteriores:"
+                    })
+                    self._history.insert(1, {
+                        "role": "assistant",
+                        "content": content
+                    })
+                    total += len(content)
         except FileNotFoundError:
-            pass  # ainda não existe, normal na primeira sessão
+            pass  # normal na primeira sessão
 
-        if sections:
-            context = "\n\n".join(sections)
-            self._system_prompt = SYSTEM_PROMPT + "\n\n" + context
-            self._vault_path = vault_path
-            total = sum(len(s) for s in sections)
+        if total:
             print(f"[OK] Vault carregado ({total} chars)")
-        else:
-            self._vault_path = vault_path
 
     async def _test_connection(self) -> bool:
         try:
