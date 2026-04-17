@@ -29,7 +29,8 @@ class OpenClaudeConfig:
 @dataclass
 class ObsidianConfig:
     """Configurações do Obsidian"""
-    vault_path: Path
+    vault_path: Path       # vault geral (ObsidianManager / logs)
+    dev_vault_path: Path   # vault de desenvolvimento (MAPA.md, contexto LLM)
     log_folder: str
 
 @dataclass
@@ -119,8 +120,10 @@ class LuminaConfig:
 
     def _load_obsidian_config(self) -> ObsidianConfig:
         vault_path = Path(self._get_env('OBSIDIAN_VAULT_PATH', 'C:/Users/Adria/Documents/Obsidian Vault'))
+        dev_vault_path = Path(self._get_env('OBSIDIAN_DEV_VAULT', str(vault_path)))
         return ObsidianConfig(
             vault_path=vault_path,
+            dev_vault_path=dev_vault_path,
             log_folder=self._get_env('OBSIDIAN_LOG_FOLDER', 'Lumina_Logs')
         )
 

@@ -85,22 +85,11 @@ class OpenClaudeClient:
 
     async def initialize(self):
         try:
-            import os
-            from dotenv import load_dotenv
+            from config import config
 
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-
-            env_local = os.path.join(base_dir, '.env.local')
-            if os.path.exists(env_local):
-                load_dotenv(env_local)
-
-            env_path = os.path.join(base_dir, '.env')
-            if os.path.exists(env_path):
-                load_dotenv(env_path, override=False)
-
-            self.api_key = os.getenv('OPENCLAUDE_API_KEY')
-            self.base_url = os.getenv('OPENCLAUDE_BASE_URL', 'https://api.deepseek.com/v1')
-            self.model = os.getenv('OPENCLAUDE_MODEL', 'deepseek-chat')
+            self.api_key = config.openclaude.api_key
+            self.base_url = config.openclaude.base_url
+            self.model = config.openclaude.model
 
             if not self.api_key:
                 logger.warning("OPENCLAUDE_API_KEY não configurada — modo offline")
@@ -110,10 +99,7 @@ class OpenClaudeClient:
 
             if await self._test_connection():
                 self.session_active = True
-                self._load_vault_context(os.getenv(
-                    'OBSIDIAN_DEV_VAULT',
-                    r'C:\Users\Adria\Documents\Documentation\Dev-lumina-agent'
-                ))
+                self._load_vault_context(str(config.obsidian.dev_vault_path))
                 logger.info("[OK] OpenClaude conectado e pronto")
                 return True
 
