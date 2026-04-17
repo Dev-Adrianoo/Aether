@@ -85,11 +85,11 @@ class LuminaConfig:
             try:
                 from dotenv import load_dotenv
                 load_dotenv(env_path)
-                print(f"✅ Configurações carregadas de {env_file}")
+                print(f"[OK] Config carregado de {env_file}")
             except ImportError:
-                print("⚠️  python-dotenv não instalado. Use: pip install python-dotenv")
+                print("[WARN] python-dotenv nao instalado. Use: pip install python-dotenv")
         else:
-            print(f"⚠️  Arquivo {env_file} não encontrado. Usando valores padrão.")
+            print(f"[WARN] Arquivo {env_file} nao encontrado. Usando valores padrao.")
 
     def _get_env(self, key: str, default: str) -> str:
         return os.getenv(key, default)
@@ -188,43 +188,43 @@ class LuminaConfig:
             errors.append(f"Obsidian vault não encontrado: {self.obsidian.vault_path}")
 
         if errors:
-            print("❌ Erros de configuração:")
+            print("[ERRO] Erros de configuracao:")
             for error in errors:
                 print(f"   - {error}")
             return False
 
-        print("✅ Configurações validadas com sucesso")
+        print("[OK] Configuracoes validadas com sucesso")
         return True
 
     def print_summary(self):
         """Exibe resumo das configurações"""
         print("\n" + "="*50)
-        print("CONFIGURAÇÃO LUMINA - RESUMO")
+        print("CONFIGURACAO LUMINA - RESUMO")
         print("="*50)
 
-        print(f"\n🎤 Áudio:")
+        print(f"\nAudio:")
         print(f"   Wake Word: {self.audio.wake_word}")
         print(f"   Sample Rate: {self.audio.sample_rate}Hz")
         print(f"   Canais: {self.audio.channels}")
 
-        print(f"\n🤖 OpenClaude:")
-        print(f"   API Key: {'✅ Configurada' if self.openclaude.api_key else '❌ Não configurada'}")
+        print(f"\nOpenClaude:")
+        print(f"   API Key: {'ok' if self.openclaude.api_key else 'AUSENTE'}")
         print(f"   Model: {self.openclaude.model}")
 
-        print(f"\n📓 Obsidian:")
+        print(f"\nObsidian:")
         print(f"   Vault: {self.obsidian.vault_path}")
-        print(f"   Existe: {'✅' if self.obsidian.vault_path.exists() else '❌'}")
+        print(f"   Existe: {'ok' if self.obsidian.vault_path.exists() else 'NAO ENCONTRADO'}")
 
-        print(f"\n🗣️  TTS:")
+        print(f"\nTTS:")
         print(f"   Engine: {self.tts.engine}")
         print(f"   Voz: {self.tts.voice}")
 
-        print(f"\n👁️  Visão:")
+        print(f"\nVisao:")
         print(f"   Qualidade: {self.vision.quality}%")
         print(f"   Formato: {self.vision.format}")
 
-        print(f"\n📊 Logging:")
-        print(f"   Nível: {self.logging.level}")
+        print(f"\nLogging:")
+        print(f"   Nivel: {self.logging.level}")
         print(f"   Arquivo: {self.logging.log_file}")
         print("="*50 + "\n")
 

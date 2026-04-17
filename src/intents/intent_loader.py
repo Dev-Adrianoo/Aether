@@ -21,9 +21,11 @@ def _load() -> dict:
 
 def build_prompt(command_text: str, last_recognized: str = "") -> str:
     """Retorna o prompt de classificação com os placeholders preenchidos."""
-    return _load()["classification_prompt"].format(
-        command_text=command_text,
-        last_recognized=last_recognized,
+    template = _load()["classification_prompt"]
+    return (
+        template
+        .replace("{command_text}", command_text)
+        .replace("{last_recognized}", last_recognized)
     )
 
 
