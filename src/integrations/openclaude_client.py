@@ -184,7 +184,7 @@ class OpenClaudeClient:
             logger.warning(f"Erro no teste de conexão: {e}")
             return False
 
-    async def classify(self, prompt: str) -> Optional[str]:
+    async def classify(self, prompt: str, model: Optional[str] = None) -> Optional[str]:
         """
         Chamada stateless para classificação — sem histórico, sem system prompt longo.
         Mais rápida que ask_question. Usada pelo LLM router.
@@ -194,7 +194,7 @@ class OpenClaudeClient:
         try:
             import aiohttp
             payload = {
-                "model": self.model,
+                "model": model or self.model,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": 200,
                 "temperature": 0.1
@@ -214,7 +214,7 @@ class OpenClaudeClient:
             logger.error(f"Erro na classificação: {e}")
             return None
 
-    async def ask_question(self, question: str) -> Optional[str]:
+    async def ask_question(self, question: str, model: Optional[str] = None) -> Optional[str]:
         """
         Envia pergunta ao LLM e retorna resposta em texto.
         Mantém histórico das últimas interações para contexto.
@@ -231,7 +231,7 @@ class OpenClaudeClient:
             messages = [{"role": "system", "content": self._system_prompt}] + self._history
 
             payload = {
-                "model": self.model,
+                "model": model or self.model,
                 "messages": messages,
                 "max_tokens": 300,
                 "temperature": 0.7

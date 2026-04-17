@@ -60,10 +60,10 @@ class IntentRouter:
             await self._speak("LLM não disponível.")
             return
 
-        from src.intents.intent_loader import build_prompt
+        from src.intents.intent_loader import build_prompt, classify_model, model_for_intent
         prompt = build_prompt(command_text, last_recognized=last)
 
-        raw = await llm.classify(prompt)
+        raw = await llm.classify(prompt, model=classify_model())
         if not raw:
             await self._speak("Não entendi. Pode repetir?")
             return
@@ -97,9 +97,7 @@ class IntentRouter:
             await self._handle_task_command(intent.get("text", ""), confidence)
 
         elif intent_type == "code_agent":
-            await self._handle_code_agent(
-                intent.get("prompt", command_text), confidence
-            )
+            await self._handle_code_agent(intent.get("prompt", command_text), confidence)
 
         elif intent_type == "correction":
             wrong = intent.get("wrong", "").strip()
@@ -116,7 +114,10 @@ class IntentRouter:
             if response:
                 await self._speak(response)
             else:
-                await self._handle_conversation(command_text, confidence)
+                await self._handle_conversation(
+                    command_text, confidence,
+                    model=model_for_intent("conversation")
+                )
 
         else:
             await self._handle_conversation(command_text, confidence)
@@ -263,7 +264,7 @@ class IntentRouter:
         oc.show_terminal(shell=shell)
         await self._speak("Terminal já está aberto." if already_open else f"Terminal aberto em {shell}.")
 
-    async def _handle_conversation(self, command_text: str, confidence: float):
+    async def _handle_conversation(self, command_text: str, confidence: float, model: Optional[str] = None):
         logger.debug(f"Conversa: {command_text}")
         question = command_text
         if self._last_code_action:
@@ -271,7 +272,7 @@ class IntentRouter:
                 f"[Contexto: acabei de enviar ao OpenClaude a tarefa: '{self._last_code_action}'. "
                 f"O terminal está aberto e pode ainda estar executando.]\n\n{command_text}"
             )
-        response = await self._modules['integration'].ask_question(question)
+        response = await self._modules['integration'].ask_question(question, model=model)
         if not response:
             await self._speak("Não consegui responder agora. Pode repetir?")
             return

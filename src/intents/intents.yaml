@@ -1,3 +1,12 @@
+# Modelo usado para classificação (sempre leve — só precisa retornar JSON pequeno)
+classify_model: deepseek-chat
+
+# Modelo por tipo de intenção após classificação
+# Intenções não listadas usam o modelo padrão do config (deepseek-chat)
+model_routing:
+  code_agent: deepseek-reasoner   # tarefas de código exigem raciocínio mais profundo
+  conversation: deepseek-chat     # conversa leve, respostas curtas
+
 classification_prompt: |
   Você recebe texto de comando de voz (pode estar garrafado pelo STT).
   Analise e retorne APENAS JSON válido com a intenção. Nenhum texto adicional.
