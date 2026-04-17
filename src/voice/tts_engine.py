@@ -172,40 +172,9 @@ class TTSEngine:
             tmpfile.write(audio_data)
 
         try:
-            try:
-                import pydub
-                from pydub.playback import play
-
-                # Carregar e reproduzir
-                audio = pydub.AudioSegment.from_mp3(tmp_path)
-                play(audio)
-                logger.debug("Áudio reproduzido com pydub")
-
-            except ImportError:
-                try:
-                    import pygame
-
-                    pygame.mixer.init()
-                    pygame.mixer.music.load(tmp_path)
-                    pygame.mixer.music.play()
-
-                    while pygame.mixer.music.get_busy():
-                        import asyncio
-                        await asyncio.sleep(0.1)
-
-                    logger.debug("Áudio reproduzido com pygame")
-
-                except ImportError:
-                    try:
-                        import playsound
-                        playsound.playsound(tmp_path)
-                        logger.debug("Áudio reproduzido com playsound")
-
-                    except ImportError:
-                        logger.warning("Nenhuma biblioteca de reprodução disponível")
-                        logger.info("Instale: pip install pydub pygame playsound")
-                        logger.debug(f"Áudio gerado mas não reproduzido: {len(audio_data)} bytes")
-
+            import playsound
+            playsound.playsound(tmp_path)
+            logger.debug("Áudio reproduzido com playsound")
         except Exception as e:
             logger.error(f"Erro ao reproduzir áudio: {e}")
             # Fallback silencioso - pelo menos o texto é impresso

@@ -74,7 +74,8 @@ def _capture(monitor_index: int) -> Tuple:
 
 def _locate_text(img, target: str) -> Optional[Tuple[int, int]]:
     import pytesseract
-    import pandas as pd
+    from config import config
+    pytesseract.pytesseract.tesseract_cmd = config.vision.tesseract_cmd
 
     target_lower = target.lower().strip()
     data = pytesseract.image_to_data(img, lang="por+eng", output_type=pytesseract.Output.DICT)

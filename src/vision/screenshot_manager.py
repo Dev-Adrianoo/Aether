@@ -113,6 +113,8 @@ class ScreenshotManager:
         if img:
             try:
                 import pytesseract
+                from config import config
+                pytesseract.pytesseract.tesseract_cmd = config.vision.tesseract_cmd
                 ocr_text = await asyncio.to_thread(
                     pytesseract.image_to_string, img, lang="por+eng"
                 )

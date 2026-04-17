@@ -274,7 +274,7 @@ class IntentRouter:
         if result.success:
             await self._speak(f"Cliquei em {target}.")
         else:
-            await self._speak(f"Não encontrei '{target}' na tela. {result.message}")
+            await self._speak(f"Não encontrei '{target}' na tela.")
 
     async def _handle_conversation(self, command_text: str, confidence: float, model: Optional[str] = None):
         logger.debug(f"Conversa: {command_text}")

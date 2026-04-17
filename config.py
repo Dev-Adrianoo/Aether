@@ -52,6 +52,7 @@ class VisionConfig:
     quality: int
     format: str
     save_path: Path
+    tesseract_cmd: str
 
 @dataclass
 class LoggingConfig:
@@ -166,7 +167,8 @@ class LuminaConfig:
         return VisionConfig(
             quality=self._get_env_int('SCREENSHOT_QUALITY', 85),
             format=self._get_env('SCREENSHOT_FORMAT', 'png'),
-            save_path=save_path
+            save_path=save_path,
+            tesseract_cmd=self._get_env('TESSERACT_CMD', r'C:\Program Files\Tesseract-OCR\tesseract.exe'),
         )
 
     def _load_logging_config(self) -> LoggingConfig:

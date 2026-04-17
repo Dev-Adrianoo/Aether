@@ -17,18 +17,36 @@ classification_prompt: |
   - terminal: abrir ou fechar terminal → {"type":"terminal","action":"open","shell":"powershell"}  (action: open|close, shell: powershell|cmd)
   - task: anotar tarefa → {"type":"task","text":"texto da tarefa"}
   - code_agent: criar/editar arquivos, executar scripts, rodar código, navegar pastas → {"type":"code_agent","prompt":"prompt técnico claro"}
-  - correction: usuário corrige explicitamente o que o microfone transcreveu — APENAS quando diz literalmente "não, eu disse X", "você entendeu errado", "o microfone errou", "corrija para X" → {"type":"correction","wrong":"texto errado","right":"texto correto"}
-  - ui_action: clicar em botão/elemento na tela, interagir com UI → {"type":"ui_action","target":"texto do elemento"}
+  - correction: usuário corrige explicitamente o que o microfone transcreveu → {"type":"correction","wrong":"texto errado","right":"texto correto"}
+  - ui_action: clicar/pressionar/selecionar elemento na tela → {"type":"ui_action","target":"texto do elemento"}
   - conversation: conversa geral → {"type":"conversation"}
 
-  Regras:
-  - screenshot: qualquer pedido de capturar/fotografar/printar/foto da tela
-  - action: abrir apps por nome (youtube, spotify, vscode, unity, obsidian)
-  - terminal: abrir/fechar cmd, powershell, opencloud, terminal — NÃO use code_agent para isso
-  - code_agent: tarefas no sistema de arquivos ou execução de código — NÃO use para abrir terminal simples
-  - correction: SOMENTE quando o usuário diz que o MICROFONE errou ("não, eu disse X", "você entendeu errado, falei X"). NÃO use quando reclama do comportamento da Lumina. Use a fala anterior como "wrong": "{last_recognized}"
-  - ui_action: clicar em botão ou elemento visível na tela — "clica em aceitar", "pressiona OK", "clica no botão fechar". target = texto exato do elemento
-  - conversation: perguntas, reclamações de comportamento, comentários, qualquer coisa que não se encaixe acima
+  Regras (ordem de prioridade — aplique a PRIMEIRA que se encaixar):
+
+  1. ui_action: PRIORIDADE MÁXIMA. Use sempre que o texto contiver verbo de interação com tela:
+     clica, clique, clicou, pressiona, pressione, toca em, seleciona, selecione, abre (seguido de elemento de UI).
+     target = o nome/texto do elemento visível na tela.
+     Exemplos: "clique no devluminaagent" → ui_action target=devluminaagent
+               "clica em aceitar" → ui_action target=aceitar
+               "pressione OK" → ui_action target=OK
+               "selecione a pasta src" → ui_action target=src
+
+  2. screenshot: pedido de capturar/fotografar/printar/foto da tela.
+
+  3. action: abrir app por nome — youtube, spotify, vscode, unity, obsidian.
+
+  4. terminal: SOMENTE pedido explícito de abrir/fechar terminal, cmd, powershell.
+     NÃO use se o texto tiver verbo de clique (regra 1 tem prioridade).
+
+  5. code_agent: tarefas técnicas — criar/editar arquivo, rodar script, navegar pastas.
+     NÃO use para abrir terminal simples.
+
+  6. correction: SOMENTE quando o usuário diz que o MICROFONE errou.
+     Frases típicas: "não, eu disse X", "você entendeu errado", "o microfone errou", "corrija para X".
+     NÃO use quando reclama do comportamento da Lumina.
+     wrong = "{last_recognized}"
+
+  7. conversation: qualquer coisa que não se encaixe acima — perguntas, reclamações de comportamento, comentários.
 
   Texto recebido: "{command_text}"
 

@@ -136,7 +136,7 @@ class SoundDeviceCapture(AudioCapture):
 
     async def capture_until_silence(
         self,
-        silence_duration: float = 2.5,
+        silence_duration: float = 1.2,
         max_duration: float = 30.0,
     ) -> Optional[bytes]:
         """
