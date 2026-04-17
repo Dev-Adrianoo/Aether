@@ -110,6 +110,10 @@ class LuminaConfig:
     def user_name(self) -> str:
         return self._get_env('LUMINA_USER_NAME', 'Mestre')
 
+    @property
+    def sentinel_timeout(self) -> float:
+        return float(self._get_env('OPENCLAUDE_SENTINEL_TIMEOUT', '300'))
+
     def _load_audio_config(self) -> AudioConfig:
         device_raw = os.getenv('AUDIO_DEVICE_INDEX')
         return AudioConfig(

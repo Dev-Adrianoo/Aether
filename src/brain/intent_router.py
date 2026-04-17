@@ -203,36 +203,49 @@ class IntentRouter:
             await self._speak("Tudo bem, fica pra depois.")
 
     async def _apply_learned_path(self, app_name: str):
+        from config import config
         learned_file = self._base_dir / "data" / "learned_path.txt"
         learned_file.unlink(missing_ok=True)
 
-        for _ in range(300):
-            await asyncio.sleep(1)
-            if learned_file.exists():
-                exe_path = learned_file.read_text(encoding="utf-8").strip()
-                learned_file.unlink(missing_ok=True)
-                if exe_path and Path(exe_path).exists():
-                    from src.actions.action_loader import learn, dispatch
-                    learn(app_name, exe_path)
-                    await self._speak(f"Aprendi o caminho do {app_name}. Abrindo agora.")
-                    dispatch(app_name)
-                else:
-                    await self._speak(f"OpenClaude não encontrou o {app_name}.")
-                return
-        await self._speak(f"Não recebi resposta sobre o {app_name}. Tenta de novo mais tarde.")
+        async def _poll_learned():
+            while not learned_file.exists():
+                await asyncio.sleep(1)
+
+        try:
+            await asyncio.wait_for(_poll_learned(), timeout=config.sentinel_timeout)
+        except asyncio.TimeoutError:
+            await self._speak(f"Não recebi resposta sobre o {app_name}. Tenta de novo mais tarde.")
+            return
+
+        exe_path = learned_file.read_text(encoding="utf-8").strip()
+        learned_file.unlink(missing_ok=True)
+        if exe_path and Path(exe_path).exists():
+            from src.actions.action_loader import learn, dispatch
+            learn(app_name, exe_path)
+            await self._speak(f"Aprendi o caminho do {app_name}. Abrindo agora.")
+            dispatch(app_name)
+        else:
+            await self._speak(f"OpenClaude não encontrou o {app_name}.")
 
     async def _monitor_openclaude_sentinel(self):
+        from config import config
         sentinel = self._base_dir / "data" / "run" / "done.sentinel"
-        for _ in range(300):
-            await asyncio.sleep(1)
-            if sentinel.exists():
-                try:
-                    sentinel.unlink()
-                except OSError:
-                    pass
-                await self._speak("OpenClaude terminou. Confere o resultado no terminal.")
-                return
-        await self._speak("OpenClaude ainda ta rodando. Me chama quando terminar.")
+
+        async def _poll_sentinel():
+            while not sentinel.exists():
+                await asyncio.sleep(1)
+
+        try:
+            await asyncio.wait_for(_poll_sentinel(), timeout=config.sentinel_timeout)
+        except asyncio.TimeoutError:
+            await self._speak("OpenClaude ainda ta rodando. Me chama quando terminar.")
+            return
+
+        try:
+            sentinel.unlink()
+        except OSError:
+            pass
+        await self._speak("OpenClaude terminou. Confere o resultado no terminal.")
 
     async def _handle_openclaude_terminal(self, command_text: str, confidence: float):
         oc = self._modules.get('openclaude')
