@@ -8,6 +8,7 @@ import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 # Arquivo: tudo em DEBUG para diagnóstico
 _file_handler = logging.FileHandler('lumina.log')
@@ -31,6 +32,7 @@ class LuminaSensorySystem:
         self.modules = {}
         self._last_recognized = ""
         self._last_code_action = ""  # última tarefa enviada ao OpenClaude — contexto de sessão
+        self._pending_learn: Optional[str] = None  # app aguardando confirmação de self-learning
         from src.voice.stt_corrector import STTCorrector
         self.stt_corrector = STTCorrector()
 
@@ -162,6 +164,11 @@ class LuminaSensorySystem:
         """
         import json as _json
 
+        # Self-learning pendente — essa fala é a resposta de confirmação
+        if self._pending_learn:
+            await self._confirm_learn_app(command_text, confidence)
+            return
+
         # Aplica correções conhecidas antes de processar
         corrected = self.stt_corrector.apply(command_text)
         if corrected != command_text:
@@ -284,6 +291,27 @@ Retorne APENAS o JSON."""
 
         asyncio.create_task(self._monitor_openclaude_sentinel())
 
+    async def _apply_learned_path(self, app_name: str):
+        """Aguarda OpenClaude escrever o path e persiste no actions.yaml."""
+        learned_file = Path(__file__).parent / "data" / "learned_path.txt"
+        learned_file.unlink(missing_ok=True)
+
+        for _ in range(300):
+            await asyncio.sleep(1)
+            if learned_file.exists():
+                exe_path = learned_file.read_text(encoding="utf-8").strip()
+                learned_file.unlink(missing_ok=True)
+                if exe_path and Path(exe_path).exists():
+                    from src.actions.action_loader import learn
+                    learn(app_name, exe_path)
+                    await self._speak(f"Aprendi o caminho do {app_name}. Abrindo agora.")
+                    from src.actions.action_loader import dispatch
+                    dispatch(app_name)
+                else:
+                    await self._speak(f"OpenClaude não encontrou o {app_name}.")
+                return
+        await self._speak(f"Não recebi resposta sobre o {app_name}. Tenta de novo mais tarde.")
+
     async def _monitor_openclaude_sentinel(self):
         """Aguarda sentinel file do script e fala quando OpenClaude terminar."""
         sentinel = Path(__file__).parent / "data" / "run" / "done.sentinel"
@@ -329,12 +357,44 @@ Retorne APENAS o JSON."""
             await self._speak(f"Terminal aberto em {shell}.")
 
     async def _handle_action(self, command_text: str, confidence: float):
-        from src.actions.action_loader import dispatch
-        feedback = dispatch(command_text)
-        if feedback:
-            await self._speak(feedback)
+        from src.actions.action_loader import dispatch, UnknownTarget
+        result = dispatch(command_text)
+        if isinstance(result, UnknownTarget):
+            await self._handle_unknown_app(result.action_id)
+        elif result:
+            await self._speak(result)
         else:
             await self._handle_conversation(command_text, confidence)
+
+    async def _handle_unknown_app(self, app_name: str):
+        """Self-learning: app conhecido mas sem path — pede confirmação e aciona OpenClaude."""
+        await self._speak(f"{app_name} não tá cadastrado. Quer que eu procure no sistema?")
+
+        # Aguarda confirmação por voz (próxima fala capturada)
+        self._pending_learn = app_name
+
+    async def _confirm_learn_app(self, command_text: str, confidence: float):
+        """Handler chamado quando há um app pendente de self-learning."""
+        app_name = self._pending_learn
+        self._pending_learn = None
+
+        text = command_text.lower()
+        if any(w in text for w in ["sim", "pode", "vai", "yes", "claro", "bora", "ok"]):
+            oc = self.modules.get('openclaude')
+            if not oc:
+                await self._speak("OpenClaude não está disponível.")
+                return
+            prompt = (
+                f"Localize o executável (.exe) do aplicativo '{app_name}' neste sistema Windows. "
+                f"Quando encontrar, escreva APENAS o path completo no arquivo: "
+                f"{Path(__file__).parent / 'data' / 'learned_path.txt'}\n"
+                f"Não pergunte nada, não explique — só escreva o path no arquivo."
+            )
+            await self._speak(f"Procurando {app_name} no sistema.")
+            oc.run_visible(prompt=prompt)
+            asyncio.create_task(self._apply_learned_path(app_name))
+        else:
+            await self._speak("Tudo bem, fica pra depois.")
 
     async def _handle_stop_command(self, command_text: str, confidence: float):
         await self._speak("Encerrando")

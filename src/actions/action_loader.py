@@ -6,8 +6,9 @@ Adicionar ou editar ações não requer tocar em Python — só o YAML.
 import logging
 import subprocess
 import webbrowser
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import yaml
 
@@ -15,6 +16,12 @@ logger = logging.getLogger(__name__)
 
 _YAML_PATH = Path(__file__).parent / "actions.yaml"
 _actions_cache: Optional[dict] = None
+
+
+@dataclass
+class UnknownTarget:
+    """Retornado quando a ação existe mas target é null — dispara self-learning."""
+    action_id: str
 
 
 def _load() -> dict:
@@ -31,10 +38,30 @@ def reload():
     _actions_cache = None
 
 
-def dispatch(command_text: str) -> Optional[str]:
+def learn(action_id: str, exe_path: str):
+    """
+    Persiste o path aprendido no YAML e invalida o cache.
+    Chamado pelo self-learning após OpenClaude encontrar o executável.
+    """
+    with open(_YAML_PATH, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    data["actions"][action_id]["target"] = exe_path
+    data["actions"][action_id]["learned"] = True
+
+    with open(_YAML_PATH, "w", encoding="utf-8") as f:
+        yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
+
+    reload()
+    logger.info(f"Self-learning: '{action_id}' -> {exe_path}")
+
+
+def dispatch(command_text: str) -> Union[str, UnknownTarget, None]:
     """
     Recebe texto do comando e executa a ação correspondente.
-    Retorna feedback para TTS, ou None se nenhuma ação foi encontrada.
+    - str: feedback para TTS
+    - UnknownTarget: ação conhecida mas sem target — self-learning deve ser acionado
+    - None: ação não encontrada no YAML
     """
     text_lower = command_text.lower()
     actions = _load()
@@ -47,7 +74,7 @@ def dispatch(command_text: str) -> Optional[str]:
     return None
 
 
-def _execute(action_id: str, action: dict) -> str:
+def _execute(action_id: str, action: dict) -> Union[str, UnknownTarget]:
     action_type = action.get("type")
     target = action.get("target")
 
@@ -58,8 +85,7 @@ def _execute(action_id: str, action: dict) -> str:
 
     if action_type == "exe":
         if not target:
-            logger.warning(f"Ação '{action_id}' sem target configurado")
-            return f"{action_id} não está configurado ainda"
+            return UnknownTarget(action_id=action_id)
         try:
             subprocess.Popen(target)
             logger.info(f"App aberto: {target}")
