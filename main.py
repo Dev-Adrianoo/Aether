@@ -138,8 +138,11 @@ class LuminaSensorySystem:
         )
         if analysis and analysis.get('filepath'):
             w, h = analysis.get('dimensions', (0, 0))
+            llm = self.modules.get('integration')
+            if llm:
+                llm.inject_screenshot_context(analysis, monitor=monitor)
             await self._speak(
-                f"Print do monitor {monitor} capturado. {w}x{h} pixels, salvo em screenshots."
+                f"Print do monitor {monitor} capturado. {w}x{h} pixels. Pode me perguntar o que você vê."
             )
         else:
             await self._speak("Erro ao capturar tela.")

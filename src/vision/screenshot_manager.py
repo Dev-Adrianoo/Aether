@@ -107,23 +107,29 @@ class ScreenshotManager:
             }
 
     async def _analyze_screenshot(self, screenshot):
-        """Analisa o screenshot para contexto"""
-        # TODO: Implementar análise com OpenCV
-        analysis = {
+        """Analisa o screenshot via OCR (pytesseract)."""
+        ocr_text = ""
+        img = screenshot.get("pil_image")
+        if img:
+            try:
+                import pytesseract
+                ocr_text = await asyncio.to_thread(
+                    pytesseract.image_to_string, img, lang="por+eng"
+                )
+                ocr_text = ocr_text.strip()
+            except Exception as e:
+                logger.debug(f"OCR falhou: {e}")
+
+        summary = ocr_text if ocr_text else "Tela capturada (sem texto detectado)"
+
+        return {
             "timestamp": screenshot["timestamp"],
-            "summary": "Tela capturada",
+            "summary": summary,
+            "ocr_text": ocr_text,
             "has_errors": False,
             "needs_attention": False,
-            "detected_elements": ["unknown"],
-            "change_significance": "low"
+            "change_significance": "medium",
         }
-
-        # Simulação de análise
-        current_time = time.time()
-        if current_time - self.last_context_send_time > self.min_interval_for_context:
-            analysis["change_significance"] = "medium"
-
-        return analysis
 
     async def _should_send_to_context(self, analysis, reason):
         """Decide se deve enviar screenshot para contexto do OpenClaude"""
