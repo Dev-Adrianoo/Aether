@@ -1,5 +1,5 @@
 ﻿"""
-IntentRouter â€” recebe texto classificado e despacha para o handler correto.
+IntentRouter â€" recebe texto classificado e despacha para o handler correto.
 main.py instancia, injeta dependÃªncias e delega. Sem lÃ³gica de roteamento em main.
 """
 
@@ -103,7 +103,7 @@ class IntentRouter:
 
         llm = self._modules.get('integration')
         if not llm:
-            await self._speak("LLM nÃ£o disponÃ­vel.")
+            await self._speak("LLM não disponível.")
             return
 
         from src.intents.intent_loader import build_prompt, classify_model, model_for_intent
@@ -111,7 +111,7 @@ class IntentRouter:
 
         raw = await llm.classify(prompt, model=classify_model())
         if not raw:
-            await self._speak("NÃ£o entendi. Pode repetir?")
+            await self._speak("Não entendi. Pode repetir?")
             return
 
         try:
@@ -161,9 +161,9 @@ class IntentRouter:
             if wrong and right:
                 self._stt_corrector.add(wrong, right)
                 await self._save_correction(wrong, right)
-                await self._speak(f"Entendido. Vou lembrar que '{wrong}' Ã© '{right}'.")
+                await self._speak(f"Entendido. Vou lembrar que '{wrong}' é '{right}'.")
             else:
-                await self._speak("NÃ£o entendi a correÃ§Ã£o. Pode repetir?")
+                await self._speak("Não entendi a correção. Pode repetir?")
 
         elif intent_type == "learn_alias":
             await self._learning_handler.handle_learn_alias(intent.get("alias", ""), intent.get("target", ""))
@@ -182,7 +182,7 @@ class IntentRouter:
             await self._learning_handler.handle_list_learning()
 
         elif intent_type == "conversation":
-            # sempre passa pelo ask_question â€” classify nÃ£o tem system prompt nem vault
+            # sempre passa pelo ask_question â€" classify nÃ£o tem system prompt nem vault
             await self._handle_conversation(
                 command_text, confidence,
                 model=model_for_intent("conversation")
@@ -225,9 +225,9 @@ class IntentRouter:
 
     def _filter_tts_text(self, text: str) -> str:
         """
-        Remove conteÃºdo interno que o usuÃ¡rio nÃ£o precisa ouvir:
+        Remove conteção interno que o usuário não precisa ouvir:
         - Paths absolutos do Windows (C:\\...)
-        - RepetiÃ§Ãµes do padrÃ£o 'CÃ“DIGO:' (jÃ¡ tratado antes)
+        - Repetições do padrão CODIGO:' (JÁ tratado antes)
         - Comandos internos excessivos
         """
         import re
@@ -253,11 +253,11 @@ class IntentRouter:
             question = f"[Contexto recente]\n{context}\n\n[Mensagem atual]\n{command_text}"
         response = await self._modules['integration'].ask_question(question, model=model)
         if not response:
-            await self._speak("NÃ£o consegui responder agora. Pode repetir?")
+            await self._speak("Não consegui responder agora. Pode repetir?")
             return
 
-        if response.strip().startswith("CÃ“DIGO:"):
-            task = response.strip()[len("CÃ“DIGO:"):].strip()
+        if response.strip().startswith("CÓDIGO:"):
+            task = response.strip()[len("CÓDIGO:"):].strip()
             if self._action_gate.should_block("code_agent", command_text):
                 logger.info("Action Gate bloqueou CODIGO vindo da conversa: %s", command_text)
                 await self._speak("Entendi como conversa, nao como ordem de execucao.")
