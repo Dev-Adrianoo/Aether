@@ -174,9 +174,14 @@ class SpeechRecognizer:
                     "vad_filter": False,
                     "condition_on_previous_text": False,
                     "initial_prompt": (
-                        "Comandos de voz em portugues brasileiro para uma assistente chamada Lumina. "
-                        "Termos comuns: Lumina, tira print, tela direita, monitor direito, terminal, "
-                        "clique, yes I accept, me fala o que tem na tela."
+                        "Conversa em português brasileiro com uma assistente de voz chamada Lumina. "
+                        "Saudações: 'Lumina, tá aí?', 'Lumina, você está aí?', 'Lumina, tô aqui'. "
+                        "Comandos comuns: 'Lumina, tira print', 'tira print da tela direita', "
+                        "'abre o terminal', 'abre o VS Code', 'abre o Obsidian', "
+                        "'me fala o que tem na tela', 'anota uma tarefa', "
+                        "'aprende que X significa Y', 'lista seus aprendizados', "
+                        "'clique no botão Yes I accept', 'fecha o terminal'. "
+                        "Fala informal: 'tá', 'tô', 'pra', 'né', 'tá bom', 'pode'."
                     ),
                 }
                 try:
