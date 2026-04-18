@@ -6,8 +6,13 @@ Orquestra visão, voz e integração com LLM.
 
 import asyncio
 import logging
+import sys
 from datetime import datetime
 from pathlib import Path
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 # Arquivo: tudo em DEBUG para diagnóstico
 _file_handler = logging.FileHandler('lumina.log')
