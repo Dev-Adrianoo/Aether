@@ -70,6 +70,8 @@ class STTCorrector:
             (r"\bmonitor\s+da\s+direita\b", "monitor direito"),
             (r"\bprint\s+screen\b", "print"),
             (r"\bscreenshot\b", "print"),
+            # Whisper confunde "tá aí" com "tira aí" quando é saudação (sem objeto depois)
+            (r"\btira\s+a[ií][?.!]?\s*$", "tá aí"),
         ]
         for pattern, replacement in replacements:
             result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
