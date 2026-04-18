@@ -312,3 +312,51 @@ class AudioCaptureFactory:
                     return PyAudioCapture(**kwargs)
                 except ImportError:
                     raise RuntimeError("Nenhum backend de áudio disponível")
+
+    @staticmethod
+    def list_audio_devices() -> dict:
+        """
+        Lista todos os dispositivos de áudio de entrada (microfones) disponíveis.
+        Retorna dicionário com {índice: nome} para dispositivos de entrada.
+
+        Exemplo de uso: python -c "from src.voice.audio_capture import AudioCaptureFactory; print(AudioCaptureFactory.list_audio_devices())"
+        """
+        try:
+            import sounddevice as sd
+            devices = sd.query_devices()
+            input_devices = {}
+
+            for i, device in enumerate(devices):
+                if device.get('max_input_channels', 0) > 0:
+                    input_devices[i] = {
+                        'name': device['name'],
+                        'input_channels': device.get('max_input_channels', 0),
+                        'default_samplerate': device.get('default_samplerate', 'N/A'),
+                        'hostapi': device.get('hostapi', 'N/A')
+                    }
+
+            return input_devices
+
+        except ImportError:
+            # Fallback para PyAudio
+            try:
+                import pyaudio
+                p = pyaudio.PyAudio()
+                input_devices = {}
+
+                for i in range(p.get_device_count()):
+                    device_info = p.get_device_info_by_index(i)
+                    if device_info.get('maxInputChannels', 0) > 0:
+                        input_devices[i] = {
+                            'name': device_info['name'],
+                            'input_channels': device_info.get('maxInputChannels', 0),
+                            'default_samplerate': device_info.get('defaultSampleRate', 'N/A')
+                        }
+
+                p.terminate()
+                return input_devices
+
+            except ImportError:
+                return {"error": "Nenhuma biblioteca de áudio disponível. Instale sounddevice ou pyaudio."}
+        except Exception as e:
+            return {"error": f"Erro ao listar dispositivos: {str(e)}"}

@@ -5,7 +5,7 @@ Usa variáveis de ambiente com fallback para valores padrão
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from dataclasses import dataclass
 
 @dataclass
@@ -38,6 +38,7 @@ class ObsidianConfig:
     vault_path: Path       # vault geral (ObsidianManager / logs)
     dev_vault_path: Path   # vault de desenvolvimento (MAPA.md, contexto LLM)
     log_folder: str
+    obsidian_exe_candidates: List[Path]
 
 @dataclass
 class TTSConfig:
@@ -107,6 +108,12 @@ class LuminaConfig:
             return False
         return default
 
+    def _get_env_paths(self, key: str, default: list[Path]) -> list[Path]:
+        value = os.getenv(key, '').strip()
+        if not value:
+            return default
+        return [Path(part.strip()) for part in value.split(';') if part.strip()]
+
     @property
     def user_name(self) -> str:
         return self._get_env('LUMINA_USER_NAME', 'Mestre')
@@ -124,19 +131,16 @@ class LuminaConfig:
             phrase_time_limit=self._get_env_int('LUMINA_PHRASE_TIME_LIMIT', 15),
             energy_threshold=self._get_env_int('LUMINA_ENERGY_THRESHOLD', 4000),
             pause_threshold=0.8,
-            device_index=int(device_raw) if device_raw is not None else 13
+            device_index=int(device_raw) if device_raw is not None else None
         )
 
     def _load_openclaude_config(self) -> OpenClaudeConfig:
-        default_bin = (
-            r'C:\Users\Adria\AppData\Roaming\npm\node_modules'
-            r'\@gitlawb\openclaude\dist\cli.mjs'
-        )
+        default_bin = Path(os.getenv('APPDATA', '')) / 'npm' / 'node_modules' / '@gitlawb' / 'openclaude' / 'dist' / 'cli.mjs'
         return OpenClaudeConfig(
             api_key=self._get_env('OPENCLAUDE_API_KEY', ''),
             base_url=self._get_env('OPENCLAUDE_BASE_URL', 'https://api.deepseek.com/v1'),
             model=self._get_env('OPENCLAUDE_MODEL', 'deepseek-chat'),
-            bin_path=Path(self._get_env('OPENCLAUDE_BIN', default_bin))
+            bin_path=Path(self._get_env('OPENCLAUDE_BIN', str(default_bin)))
         )
 
     def _load_groq_config(self) -> GroqConfig:
@@ -145,12 +149,20 @@ class LuminaConfig:
         )
 
     def _load_obsidian_config(self) -> ObsidianConfig:
-        vault_path = Path(self._get_env('OBSIDIAN_VAULT_PATH', 'C:/Users/Adria/Documents/Obsidian Vault'))
+        vault_path = Path(self._get_env('OBSIDIAN_VAULT_PATH', str(Path.home() / 'Documents' / 'Obsidian Vault')))
         dev_vault_path = Path(self._get_env('OBSIDIAN_DEV_VAULT', str(vault_path)))
+        local_app_data = Path(os.getenv('LOCALAPPDATA', ''))
+        program_files = Path(os.getenv('ProgramFiles', 'C:/Program Files'))
+        obsidian_candidates = self._get_env_paths('OBSIDIAN_EXE_CANDIDATES', [
+            local_app_data / 'Programs' / 'Obsidian' / 'Obsidian.exe',
+            local_app_data / 'Obsidian' / 'Obsidian.exe',
+            program_files / 'Obsidian' / 'Obsidian.exe',
+        ])
         return ObsidianConfig(
             vault_path=vault_path,
             dev_vault_path=dev_vault_path,
-            log_folder=self._get_env('OBSIDIAN_LOG_FOLDER', 'Lumina_Logs')
+            log_folder=self._get_env('OBSIDIAN_LOG_FOLDER', 'Lumina_Logs'),
+            obsidian_exe_candidates=obsidian_candidates
         )
 
     def _load_tts_config(self) -> TTSConfig:

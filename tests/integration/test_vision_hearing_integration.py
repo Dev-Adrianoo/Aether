@@ -1,165 +1,123 @@
 """
-Teste de integração entre visão e audição
+Testes de integracao entre visao e processamento de comandos de voz.
 """
 
-import asyncio
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime
-
-# Importar módulos
 import sys
+import time
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.vision.screenshot_manager import ScreenshotManager
+from src.voice.audio_capture import AudioCapture
+from src.voice.command_processor import CommandProcessor
+from src.voice.speech_recognizer import SpeechRecognizer
 from src.voice.voice_listener import VoiceListener
 
 
-class TestVisionHearingIntegration:
-    """Testes de integração entre módulos de visão e audição"""
+def make_listener(processor: CommandProcessor) -> VoiceListener:
+    audio = Mock(spec=AudioCapture)
+    recognizer = Mock(spec=SpeechRecognizer)
+    return VoiceListener(
+        audio_capture=audio,
+        speech_recognizer=recognizer,
+        command_processor=processor,
+        config={"print_feedback": False},
+    )
 
+
+class TestVisionHearingIntegration:
     @pytest.fixture
     def vision_manager(self):
-        """Fixture para vision manager"""
         manager = ScreenshotManager()
-        manager.screenshot_interval = 2  # 2 segundos para testes rápidos
+        manager.screenshot_interval = 2
         return manager
 
-    @pytest.fixture
-    def hearing_listener(self):
-        """Fixture para hearing listener"""
-        return VoiceListener()
-
     @pytest.mark.asyncio
-    async def test_trigger_word_capture_integration(self, vision_manager, hearing_listener):
-        """Testa integração: trigger word → captura de screenshot"""
-        # Mock para captura
-        mock_capture = AsyncMock()
-        vision_manager.capture_and_analyze = mock_capture
-        mock_capture.return_value = {"summary": "Teste", "dimensions": (1920, 1080)}
+    async def test_trigger_word_capture_integration(self, vision_manager):
+        vision_manager.capture_and_analyze = AsyncMock(return_value={"summary": "Teste", "dimensions": (1920, 1080)})
 
-        # Simular comando de voz com trigger word
         command_text = "lumina tira um print da tela"
 
-        # Processar como se tivesse vindo do VoiceListener
-        await hearing_listener._process_audio_text(command_text)
-
-        # Verificar se o ScreenshotManager detectaria trigger word
         should_capture = await vision_manager.check_trigger_words(command_text)
-        assert should_capture is True, "Trigger word não detectada"
+        assert should_capture is True
 
-        # Se tivéssemos integração direta, capturaria screenshot
-        if should_capture:
-            result = await vision_manager.capture_and_analyze(reason="voice_trigger")
-            assert result["summary"] == "Teste"
+        result = await vision_manager.capture_and_analyze(reason="voice_trigger")
+        assert result["summary"] == "Teste"
 
     @pytest.mark.asyncio
-    async def test_command_classification_integration(self, hearing_listener):
-        """Testa que comandos de screenshot são classificados corretamente"""
-        test_commands = [
-            ("lumina tira um print", "screenshot"),
-            ("lumina captura a tela", "screenshot"),
-            ("lumina mostra como está", "screenshot"),
-            ("lumina olha aqui", "screenshot"),
-            ("lumina tira uma foto", "screenshot"),
-        ]
+    async def test_command_processor_routes_wake_word_to_llm_handler(self):
+        processor = CommandProcessor(wake_word="lumina", cooldown=0)
+        handler = AsyncMock()
+        processor.register_command("llm_route", handler)
 
-        for command, expected_type in test_commands:
-            # Extrair comando (tudo depois do wake word)
-            command_start = command.find("lumina") + len("lumina")
-            command_text = command[command_start:].strip()
+        detected = await processor.process_text("lumina tira um print da tela")
 
-            # Classificar
-            command_type = hearing_listener._classify_command(command_text)
-            assert command_type == expected_type, f"Falha em: '{command}' -> {command_type}"
+        assert detected is True
+        handler.assert_awaited_once()
+        assert "tira um print da tela" in handler.await_args.args[0]
 
-    @pytest.mark.asyncio
-    async def test_confidence_calculation_integration(self, vision_manager, hearing_listener):
-        """Testa que comandos com trigger words têm alta confiança"""
-        test_cases = [
-            ("tira um print da tela", True),  # Tem trigger word
-            ("captura isso aqui", True),      # Tem trigger word
-            ("teste qualquer", False),        # Não tem trigger word
-        ]
+    def test_command_classification_integration(self):
+        processor = CommandProcessor(wake_word="lumina")
 
-        for command, has_trigger in test_cases:
-            # Verificar no vision manager
-            has_trigger_vision = await vision_manager.check_trigger_words(command)
+        assert processor._classify_command("tira um print") == "llm_route"
+        assert processor._classify_command("abre o youtube") == "llm_route"
+        assert processor._classify_command("para tudo") == "stop"
 
-            # Calcular confiança no hearing
-            confidence = hearing_listener._calculate_confidence(command)
+    def test_confidence_calculation_integration(self):
+        processor = CommandProcessor(wake_word="lumina")
 
-            # Se tem trigger word, deve ter confiança > 0.5
-            if has_trigger:
-                assert has_trigger_vision is True
-                assert confidence > 0.5, f"Confiança baixa para trigger word: {confidence}"
-            else:
-                assert confidence == 0.5, f"Confiança inesperada: {confidence}"
+        assert processor._calculate_confidence("tira um print da tela") > 0.5
+        assert processor._calculate_confidence("captura isso aqui") > 0.5
+        assert processor._calculate_confidence("teste qualquer") == 0.5
 
-    @pytest.mark.asyncio
-    async def test_screenshot_decision_flow(self, vision_manager):
-        """Testa fluxo completo de decisão de screenshot"""
-        import time
-
-        # Cenário 1: Trigger word deve capturar
+    def test_screenshot_decision_flow(self, vision_manager):
         vision_manager.last_screenshot_time = time.time() - 10
         should_capture, reason = vision_manager.should_capture_screenshot("tira um print agora")
         assert should_capture is True
         assert reason == "trigger_word"
 
-        # Cenário 2: Intervalo deve capturar
-        vision_manager.last_screenshot_time = time.time() - 70  # 70 segundos atrás
+        vision_manager.last_screenshot_time = time.time() - 70
         should_capture, reason = vision_manager.should_capture_screenshot()
         assert should_capture is True
         assert reason == "interval"
 
-        # Cenário 3: Não deve capturar (sem trigger, intervalo não passou)
-        vision_manager.last_screenshot_time = time.time() - 1  # 1 segundo atrás (intervalo é 2)
+        vision_manager.last_screenshot_time = time.time() - 1
         should_capture, reason = vision_manager.should_capture_screenshot("texto normal")
         assert should_capture is False
         assert reason is None
 
     @pytest.mark.asyncio
-    async def test_wake_word_processing_flow(self, hearing_listener):
-        """Testa fluxo completo de processamento de wake word"""
-        # Mock callbacks
-        mock_wake_callback = AsyncMock()
-        mock_command_callback = AsyncMock()
-        hearing_listener.on_wake_word_detected = mock_wake_callback
-        hearing_listener.on_command_detected = mock_command_callback
+    async def test_voice_listener_callback_flow(self):
+        processor = CommandProcessor(wake_word="lumina", cooldown=0)
+        listener = make_listener(processor)
+        listener.running = True
+        listener.speech_recognizer.recognize = AsyncMock(return_value="lumina tira um print da tela por favor")
 
-        # Processar comando com wake word
-        await hearing_listener._process_audio_text("lumina tira um print da tela por favor")
+        handler = AsyncMock()
+        listener.register_command_handler("llm_route", handler)
 
-        # Verificar callbacks
-        mock_wake_callback.assert_called_once()
-        mock_command_callback.assert_called_once()
+        await listener._process_audio_callback(b"audio")
 
-        # Verificar parâmetros do comando
-        args = mock_command_callback.call_args[0]
-        assert "tira um print da tela por favor" in args[0]  # Comando
-        assert 0.5 <= args[1] <= 0.95  # Confiança
+        handler.assert_awaited_once()
+        assert "tira um print da tela por favor" in handler.await_args.args[0]
 
-    @pytest.mark.asyncio
-    async def test_economy_of_context_integration(self, vision_manager):
-        """Testa integração da economia de contexto"""
-        # Configurar
+    def test_economy_of_context_integration(self, vision_manager):
         vision_manager.min_interval_for_context = 5
-        vision_manager.last_context_send_time = time.time() - 10  # 10 segundos atrás
+        vision_manager.last_context_send_time = time.time() - 10
 
-        # Cenários de teste
-        test_scenarios = [
-            ({"has_errors": True}, True, "Erro detectado → envia"),
-            ({"has_errors": False, "needs_attention": True}, True, "Precisa atenção → envia"),
-            ({"has_errors": False, "needs_attention": False, "change_significance": "high"}, True, "Mudança alta → envia"),
-            ({"has_errors": False, "needs_attention": False, "change_significance": "low"}, True, "Passou intervalo → envia"),
+        scenarios = [
+            ({"has_errors": True}, True),
+            ({"has_errors": False, "needs_attention": True}, True),
+            ({"has_errors": False, "needs_attention": False, "change_significance": "high"}, True),
+            ({"has_errors": False, "needs_attention": False, "change_significance": "low"}, True),
         ]
 
-        for analysis, should_send, description in test_scenarios:
-            # Simular _should_send_to_context
+        for analysis, should_send in scenarios:
             current_time = time.time()
-
             sends = False
             if analysis.get("has_errors", False):
                 sends = True
@@ -171,51 +129,4 @@ class TestVisionHearingIntegration:
                 if current_time - vision_manager.last_context_send_time > 60:
                     sends = True
 
-            assert sends == should_send, f"Falha em: {description}"
-
-
-if __name__ == "__main__":
-    # Execução manual dos testes de integração
-    import asyncio
-
-    async def run_integration_tests():
-        print("🧪 TESTES DE INTEGRAÇÃO VISÃO-AUDIÇÃO")
-        print("=" * 50)
-
-        from src.vision.screenshot_manager import ScreenshotManager
-        from src.voice.voice_listener import VoiceListener
-
-        vision = ScreenshotManager()
-        hearing = VoiceListener()
-
-        print("1. Testando trigger word detection...")
-        command = "lumina tira um print da tela"
-        has_trigger = await vision.check_trigger_words(command)
-        assert has_trigger is True, "Trigger word não detectada"
-        print("✅ OK")
-
-        print("2. Testando classificação de comando...")
-        command_start = command.find("lumina") + len("lumina")
-        command_text = command[command_start:].strip()
-        command_type = hearing._classify_command(command_text)
-        assert command_type == "screenshot", f"Tipo incorreto: {command_type}"
-        print("✅ OK")
-
-        print("3. Testando cálculo de confiança...")
-        confidence = hearing._calculate_confidence(command_text)
-        assert confidence > 0.5, f"Confiança baixa: {confidence}"
-        print(f"✅ OK (confiança: {confidence:.2f})")
-
-        print("4. Testando decisão de screenshot...")
-        import time
-        vision.last_screenshot_time = time.time() - 70
-        should_capture, reason = vision.should_capture_screenshot(command_text)
-        assert should_capture is True, "Deveria capturar"
-        assert reason == "trigger_word", f"Razão incorreta: {reason}"
-        print("✅ OK")
-
-        print("\n" + "=" * 50)
-        print("🎉 TODOS OS TESTES DE INTEGRAÇÃO PASSARAM!")
-        print("Módulos de visão e audição estão integrados corretamente.")
-
-    asyncio.run(run_integration_tests())
+            assert sends == should_send

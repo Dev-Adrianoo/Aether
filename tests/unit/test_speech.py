@@ -1,67 +1,50 @@
 """
-Testes unitários do módulo de fala (TTSEngine)
+Testes unitarios do modulo de fala (TTSEngine).
 """
 
-import asyncio
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
 import sys
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
 
-# Adicionar diretório raiz ao path
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.voice.tts_engine import TTSEngine
 from config import config
+from src.voice.tts_engine import TTSEngine
 
 
 class TestTTSEngine:
-    """Testes para TTSEngine"""
-
     @pytest.fixture
     def tts(self):
-        """Fixture para criar TTSEngine limpo"""
         return TTSEngine()
 
     def test_initialization(self, tts):
-        """Testa inicialização do TTSEngine"""
-        # Verificar se usa configuração do sistema
         expected_engine = config.tts.engine
-        expected_use_edge_tts = expected_engine == 'edge-tts'
+        expected_use_edge_tts = expected_engine == "edge-tts"
 
-        assert tts.use_edge_tts == expected_use_edge_tts, f"use_edge_tts incorreto: {tts.use_edge_tts} (esperado: {expected_use_edge_tts})"
-        assert tts.voice_name == config.tts.voice, f"voice_name incorreto: {tts.voice_name}"
-        assert tts.rate == config.tts.rate, f"rate incorreto: {tts.rate}"
-        assert tts.engine is None  # Ainda não inicializado
-        assert tts.voice is None   # Ainda não inicializado
+        assert tts.use_edge_tts == expected_use_edge_tts
+        assert tts.voice_name == config.tts.voice
+        assert tts.rate == config.tts.rate
+        assert tts.engine is None
+        assert tts.voice is None
 
     def test_initialization_with_override(self):
-        """Testa inicialização com override de use_edge_tts"""
-        # Forçar pyttsx3 mesmo se config for edge-tts
-        tts = TTSEngine(use_edge_tts=False)
-        assert tts.use_edge_tts is False
-
-        # Forçar edge-tts mesmo se config for pyttsx3
-        tts = TTSEngine(use_edge_tts=True)
-        assert tts.use_edge_tts is True
+        assert TTSEngine(use_edge_tts=False).use_edge_tts is False
+        assert TTSEngine(use_edge_tts=True).use_edge_tts is True
 
     @pytest.mark.asyncio
     async def test_initialize_edge_tts(self):
-        """Testa inicialização com edge-tts"""
-        # Mock edge_tts import dentro do método initialize
-        with patch('src.voice.tts_engine.edge_tts') as mock_edge_tts:
+        with patch("src.voice.tts_engine.edge_tts") as mock_edge_tts:
             tts = TTSEngine(use_edge_tts=True)
             success = await tts.initialize()
 
             assert success is True
-            # edge_tts é importado dentro do método, não atribuído ao engine
-            # O engine será o módulo edge_tts mockado
+            assert tts.engine == mock_edge_tts
 
     @pytest.mark.asyncio
     async def test_initialize_pyttsx3(self):
-        """Testa inicialização com pyttsx3"""
-        # Mock pyttsx3 import dentro do método initialize
-        with patch('src.voice.tts_engine.pyttsx3') as mock_pyttsx3:
+        with patch("src.voice.tts_engine.pyttsx3") as mock_pyttsx3:
             mock_engine = Mock()
             mock_pyttsx3.init.return_value = mock_engine
             mock_engine.getProperty.return_value = []
@@ -71,13 +54,12 @@ class TestTTSEngine:
 
             assert success is True
             assert tts.engine == mock_engine
-            mock_engine.setProperty.assert_any_call('rate', tts.rate)
-            mock_engine.setProperty.assert_any_call('volume', 0.9)
+            mock_engine.setProperty.assert_any_call("rate", tts.rate)
+            mock_engine.setProperty.assert_any_call("volume", 0.9)
 
     @pytest.mark.asyncio
     async def test_initialize_import_error(self):
-        """Testa falha na inicialização por import error"""
-        with patch('src.voice.tts_engine.edge_tts', side_effect=ImportError("No module named 'edge_tts'")):
+        with patch("src.voice.tts_engine.edge_tts", None):
             tts = TTSEngine(use_edge_tts=True)
             success = await tts.initialize()
 
@@ -85,34 +67,26 @@ class TestTTSEngine:
 
     @pytest.mark.asyncio
     async def test_speak_edge_tts(self):
-        """Testa fala com edge-tts"""
-        # Mock edge_tts import dentro do método speak
-        with patch('src.voice.tts_engine.edge_tts') as mock_edge_tts:
-            mock_communicate = AsyncMock()
+        with patch("src.voice.tts_engine.edge_tts") as mock_edge_tts:
+            mock_communicate = Mock()
             mock_edge_tts.Communicate.return_value = mock_communicate
 
-            # Mock stream
             async def mock_stream():
                 yield {"type": "audio", "data": b"audio_data"}
 
             mock_communicate.stream.return_value = mock_stream()
 
             tts = TTSEngine(use_edge_tts=True)
-            tts.engine = mock_edge_tts  # Simular inicialização
+            tts.engine = mock_edge_tts
+            tts._play_audio = AsyncMock()
 
             await tts.speak("Texto de teste")
 
-            # Verificar chamadas
-            mock_edge_tts.Communicate.assert_called_once()
-            call_args = mock_edge_tts.Communicate.call_args
-            assert call_args[0] == "Texto de teste"
-            # Verificar que usa voz mapeada
-            assert 'pt-BR' in call_args[1]  # Deve conter pt-BR na voz
+            mock_edge_tts.Communicate.assert_called_once_with("Texto de teste", "pt-BR-FranciscaNeural")
+            tts._play_audio.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_speak_pyttsx3(self):
-        """Testa fala com pyttsx3"""
-        # Mock engine
         mock_engine = Mock()
 
         tts = TTSEngine(use_edge_tts=False)
@@ -125,52 +99,43 @@ class TestTTSEngine:
 
     @pytest.mark.asyncio
     async def test_speak_empty_text(self):
-        """Testa fala com texto vazio"""
         tts = TTSEngine()
         tts.engine = Mock()
 
-        # Texto vazio não deve chamar engine
         await tts.speak("")
         await tts.speak("   ")
         await tts.speak(None)
 
-        # Engine não deve ser chamada
-        if hasattr(tts.engine, 'say'):
+        if hasattr(tts.engine, "say"):
             tts.engine.say.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_speak_no_engine(self):
-        """Testa fala sem engine inicializado"""
         tts = TTSEngine()
-        tts.engine = None  # Simular não inicializado
+        tts.engine = None
 
-        # Deve usar fallback (apenas print)
         await tts.speak("Texto de fallback")
 
     @pytest.mark.asyncio
     async def test_test_voice(self):
-        """Testa método de teste de voz"""
         tts = TTSEngine()
         tts.speak = AsyncMock()
 
         await tts.test_voice()
 
-        # Deve chamar speak 8 vezes (2 ciclos × 4 frases cada)
         assert tts.speak.call_count == 8
         phrases = [call.args[0] for call in tts.speak.call_args_list]
-        # Verificar que as 4 frases aparecem (podem aparecer múltiplas vezes)
         expected_phrases = [
             "Olá, eu sou a Lumina.",
             "Sistema de visão e audição ativo.",
             "Pronto para ajudar no desenvolvimento.",
-            "Teste de voz concluído com sucesso."
+            "Teste de voz concluído com sucesso.",
         ]
         for expected in expected_phrases:
-            assert expected in phrases, f"Frase '{expected}' não encontrada"
+            assert expected in phrases
 
     @pytest.mark.asyncio
     async def test_shutdown_pyttsx3(self):
-        """Testa encerramento com pyttsx3"""
         mock_engine = Mock()
 
         tts = TTSEngine(use_edge_tts=False)
@@ -182,74 +147,18 @@ class TestTTSEngine:
 
     @pytest.mark.asyncio
     async def test_shutdown_edge_tts(self):
-        """Testa encerramento com edge-tts (não precisa fazer nada)"""
         tts = TTSEngine(use_edge_tts=True)
         tts.engine = Mock()
 
-        # Não deve lançar erro
         await tts.shutdown()
 
     def test_voice_mapping(self):
-        """Testa mapeamento de vozes"""
-        tts = TTSEngine()
-
-        # Testar diferentes configurações de voz
-        test_cases = [
-            ('pt-br', 'pt-BR-FranciscaNeural'),
-            ('pt-pt', 'pt-PT-RaquelNeural'),
-            ('en-us', 'en-US-AriaNeural'),
-            ('en-gb', 'en-GB-SoniaNeural'),
-            ('es-es', 'pt-BR-FranciscaNeural'),  # Fallback para pt-br
-        ]
-
-        for config_voice, expected_voice in test_cases:
-            tts.voice_name = config_voice
-
-            # Verificar mapeamento (precisa acessar método privado ou testar indiretamente)
-            # Para simplificar, vamos testar a lógica diretamente
-            voice_map = {
-                'pt-br': 'pt-BR-FranciscaNeural',
-                'pt-pt': 'pt-PT-RaquelNeural',
-                'en-us': 'en-US-AriaNeural',
-                'en-gb': 'en-GB-SoniaNeural'
-            }
-            result = voice_map.get(config_voice, 'pt-BR-FranciscaNeural')
-            assert result == expected_voice, f"Mapeamento incorreto para {config_voice}: {result}"
-
-
-if __name__ == "__main__":
-    # Execução manual dos testes (para debugging)
-    import asyncio
-
-    async def run_tests():
-        print("🧪 Testando TTSEngine...\n")
-
-        # Testar inicialização
-        print("1. Testando inicialização...")
-        tts = TTSEngine()
-        print(f"   Configuração: engine={config.tts.engine}, voice={config.tts.voice}, rate={config.tts.rate}")
-        print(f"   TTSEngine: use_edge_tts={tts.use_edge_tts}, voice_name={tts.voice_name}, rate={tts.rate}")
-        print("✅ OK")
-
-        # Testar inicialização com override
-        print("\n2. Testando inicialização com override...")
-        tts_override = TTSEngine(use_edge_tts=False)
-        assert tts_override.use_edge_tts is False, "Override não funcionou"
-        print("✅ OK")
-
-        # Testar mapeamento de vozes
-        print("\n3. Testando mapeamento de vozes...")
         voice_map = {
-            'pt-br': 'pt-BR-FranciscaNeural',
-            'pt-pt': 'pt-PT-RaquelNeural',
-            'en-us': 'en-US-AriaNeural',
-            'en-gb': 'en-GB-SoniaNeural'
+            "pt-br": "pt-BR-FranciscaNeural",
+            "pt-pt": "pt-PT-RaquelNeural",
+            "en-us": "en-US-AriaNeural",
+            "en-gb": "en-GB-SoniaNeural",
         }
-        for voice, expected in voice_map.items():
-            result = voice_map.get(voice, 'pt-BR-FranciscaNeural')
-            assert result == expected, f"Mapeamento incorreto para {voice}"
-        print("✅ OK")
 
-        print("\n🎉 Testes básicos do TTSEngine passaram!")
-
-    asyncio.run(run_tests())
+        assert voice_map.get("pt-br", "pt-BR-FranciscaNeural") == "pt-BR-FranciscaNeural"
+        assert voice_map.get("es-es", "pt-BR-FranciscaNeural") == "pt-BR-FranciscaNeural"

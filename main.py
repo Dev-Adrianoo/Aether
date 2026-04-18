@@ -141,11 +141,36 @@ class LuminaSensorySystem:
             llm = self.modules.get('integration')
             if llm:
                 llm.inject_screenshot_context(analysis, monitor=monitor)
+            if self._should_answer_after_screenshot(command_text) and llm:
+                answer = await llm.ask_question(
+                    "Use o screenshot capturado agora para responder ao pedido do usuario. "
+                    "Fale de forma direta o que esta visivel e, se houver problema ou erro, diga o provavel significado."
+                )
+                await self._speak(answer or "Capturei, mas nao consegui analisar agora.")
+                return
             await self._speak(
                 f"Print do monitor {monitor} capturado. {w}x{h} pixels. Pode me perguntar o que você vê."
             )
         else:
             await self._speak("Erro ao capturar tela.")
+
+    def _should_answer_after_screenshot(self, command_text: str) -> bool:
+        text = command_text.lower()
+        triggers = [
+            "me fala",
+            "me diga",
+            "o que voce ve",
+            "o que você vê",
+            "o que ve",
+            "o que vê",
+            "veja",
+            "analisa",
+            "analise",
+            "o que acha",
+            "problema",
+            "erro",
+        ]
+        return any(trigger in text for trigger in triggers)
 
     async def _handle_stop_command(self, command_text: str, confidence: float):
         await self._speak("Encerrando")

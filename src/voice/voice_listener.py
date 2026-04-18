@@ -28,7 +28,7 @@ class VoiceListener:
     ):
         # Dependency Injection ou criação padrão
         cfg = (config or {})
-        _device = cfg.get('device_index', 47)
+        _device = cfg.get('device_index', None)  # None usa dispositivo padrão do sistema
         _rate   = cfg.get('sample_rate', 44100)
         self.audio_capture = audio_capture or AudioCaptureFactory.create_capture(
             method="sounddevice",

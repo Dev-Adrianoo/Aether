@@ -1,52 +1,100 @@
-# Modelo usado para classificação (sempre leve — só precisa retornar JSON pequeno)
+# Modelo usado para classificacao (sempre leve, so precisa retornar JSON pequeno)
 classify_model: deepseek-chat
 
-# Modelo por tipo de intenção após classificação
-# Intenções não listadas usam o modelo padrão do config (deepseek-chat)
+# Modelo por tipo de intencao apos classificacao.
+# Intencoes nao listadas usam o modelo padrao do config (deepseek-chat).
 model_routing:
-  code_agent: deepseek-reasoner   # tarefas de código exigem raciocínio mais profundo
-  conversation: deepseek-chat     # conversa leve, respostas curtas
+  code_agent: deepseek-reasoner
+  conversation: deepseek-chat
 
 classification_prompt: |
-  Você recebe texto de comando de voz (pode estar garrafado pelo STT).
-  Analise e retorne APENAS JSON válido com a intenção. Nenhum texto adicional.
+  Voce recebe texto de comando de voz, possivelmente com erros de STT.
+  Analise e retorne APENAS JSON valido com a intencao. Nenhum texto adicional.
 
-  Tipos disponíveis:
-  - screenshot: capturar tela → {"type":"screenshot","monitor":1}  (monitor: 1=esquerda/padrão, 2=direita/segundo)
-  - action: abrir aplicativo → {"type":"action","app":"youtube"}  (apps válidos: youtube, spotify, vscode, unity, obsidian)
-  - terminal: abrir ou fechar terminal → {"type":"terminal","action":"open","shell":"powershell"}  (action: open|close, shell: powershell|cmd)
-  - task: anotar tarefa → {"type":"task","text":"texto da tarefa"}
-  - code_agent: criar/editar arquivos, executar scripts, rodar código, navegar pastas → {"type":"code_agent","prompt":"prompt técnico claro"}
-  - correction: usuário corrige explicitamente o que o microfone transcreveu → {"type":"correction","wrong":"texto errado","right":"texto correto"}
-  - ui_action: clicar/pressionar/selecionar elemento na tela → {"type":"ui_action","target":"texto do elemento"}
-  - conversation: conversa geral → {"type":"conversation"}
+  Tipos disponiveis:
+  - screenshot: capturar/olhar/analisar tela -> {"type":"screenshot","monitor":1} (monitor: 1=esquerda/padrao, 2=direita/segundo)
+  - action: abrir aplicativo -> {"type":"action","app":"youtube"} (apps validos: youtube, spotify, vscode, unity, obsidian)
+  - terminal: abrir ou fechar terminal -> {"type":"terminal","action":"open","shell":"powershell"} (action: open|close, shell: powershell|cmd)
+  - task: anotar tarefa -> {"type":"task","text":"texto da tarefa"}
+  - code_agent: criar/editar arquivos, executar scripts, rodar codigo, navegar pastas -> {"type":"code_agent","prompt":"prompt tecnico claro"}
+  - correction: usuario corrige explicitamente o que o microfone transcreveu -> {"type":"correction","wrong":"texto errado","right":"texto correto"}
+  - learn_alias: aprender alias de fala -> {"type":"learn_alias","alias":"texto que usuario fala","target":"texto que Lumina deve entender"}
+  - learn_preference: aprender preferencia simples -> {"type":"learn_preference","key":"nome_da_preferencia","value":true,"description":"descricao curta"}
+  - forget_alias: esquecer alias aprendido -> {"type":"forget_alias","alias":"texto do alias"}
+  - list_learning: listar aprendizados -> {"type":"list_learning"}
+  - ui_action: clicar/pressionar/selecionar elemento na tela -> {"type":"ui_action","target":"texto do elemento"}
+  - conversation: conversa geral -> {"type":"conversation"}
 
-  Regras (ordem de prioridade — aplique a PRIMEIRA que se encaixar):
+  Regras de prioridade. Aplique a PRIMEIRA que encaixar.
 
-  1. ui_action: PRIORIDADE MÁXIMA. Use sempre que o texto contiver verbo de interação com tela:
-     clica, clique, clicou, pressiona, pressione, toca em, seleciona, selecione, abre (seguido de elemento de UI).
-     target = o nome/texto do elemento visível na tela.
-     Exemplos: "clique no devluminaagent" → ui_action target=devluminaagent
-               "clica em aceitar" → ui_action target=aceitar
-               "pressione OK" → ui_action target=OK
-               "selecione a pasta src" → ui_action target=src
+  0. conversation: use quando o usuario estiver narrando, explicando, reclamando ou falando do que ELE vai fazer.
+     NAO execute acao para frases em primeira pessoa como "vou abrir", "eu vou abrir",
+     "vou tentar", "estou pensando em", "eu gostaria de uma opiniao", "nao pedi para abrir".
+     Se houver duvida entre executar e conversar, escolha conversation.
+     Exemplos:
+       "vou tentar abrir como administrador agora" -> {"type":"conversation"}
+       "eu falei que eu iria abrir o powershell" -> {"type":"conversation"}
+       "estou pensando em pegar um mes gratis do codex, compensa?" -> {"type":"conversation"}
+       "openclaude nao e para abrir, e o nome da ferramenta" -> {"type":"conversation"}
 
-  2. screenshot: pedido de capturar/fotografar/printar/foto da tela.
+  1. ui_action: use somente quando houver ordem direta de interacao com elemento da tela:
+     clica, clique, pressiona, pressione, toca em, seleciona, selecione.
+     target = o nome/texto do elemento visivel na tela.
+     NAO use ui_action para "olha", "veja", "analisa", "o que voce ve", "tela direita" sem verbo de clique.
+     Exemplos:
+       "clique no devluminaagent" -> {"type":"ui_action","target":"devluminaagent"}
+       "clica em aceitar" -> {"type":"ui_action","target":"aceitar"}
+       "pressione OK" -> {"type":"ui_action","target":"OK"}
+       "selecione a pasta src" -> {"type":"ui_action","target":"src"}
 
-  3. action: abrir app por nome — youtube, spotify, vscode, unity, obsidian.
+  2. screenshot: pedido de capturar/fotografar/printar/foto da tela ou olhar/ver/analisar tela/monitor.
+     Se pedir "tira print e me fala o que ve", ainda retorne screenshot; o handler respondera depois da captura.
+     Exemplos:
+       "olha minha tela direita" -> {"type":"screenshot","monitor":2}
+       "veja o que tem no monitor direito" -> {"type":"screenshot","monitor":2}
+       "tira print da tela direita e me diz o que acha" -> {"type":"screenshot","monitor":2}
 
-  4. terminal: SOMENTE pedido explícito de abrir/fechar terminal, cmd, powershell.
-     NÃO use se o texto tiver verbo de clique (regra 1 tem prioridade).
+  3. action: abrir app por nome: youtube, spotify, vscode, unity, obsidian.
+     So use quando for ordem direta para a Lumina abrir. Nao use se o usuario disser que ele mesmo vai abrir.
+     Exemplos:
+       "abre o youtube" -> {"type":"action","app":"youtube"}
+       "vou abrir o youtube" -> {"type":"conversation"}
 
-  5. code_agent: tarefas técnicas — criar/editar arquivo, rodar script, navegar pastas.
-     NÃO use para abrir terminal simples.
+  4. terminal: SOMENTE pedido explicito para a Lumina abrir/fechar terminal, cmd ou powershell.
+     NAO use se o texto tiver verbo de clique.
+     NAO use quando "OpenClaude/open cloud" for citado como nome da ferramenta.
+     Exemplos:
+       "abre o terminal" -> {"type":"terminal","action":"open","shell":"powershell"}
+       "feche o terminal" -> {"type":"terminal","action":"close","shell":"powershell"}
+       "OpenClaude abriu outro terminal" -> {"type":"conversation"}
 
-  6. correction: SOMENTE quando o usuário diz que o MICROFONE errou.
-     Frases típicas: "não, eu disse X", "você entendeu errado", "o microfone errou", "corrija para X".
-     NÃO use quando reclama do comportamento da Lumina.
+  5. code_agent: tarefas tecnicas claras que a Lumina deve executar: criar/editar arquivo, rodar script, navegar pasta.
+     NAO use para abrir terminal simples.
+     NAO use para frases incompletas, perguntas conceituais ou reclamacoes sobre comportamento.
+     So use quando o usuario pedir claramente para a Lumina executar algo no sistema.
+
+  6. correction: SOMENTE quando o usuario diz que o MICROFONE errou.
+     Frases tipicas: "nao, eu disse X", "voce entendeu errado", "o microfone errou", "corrija para X".
+     NAO use quando reclama do comportamento da Lumina.
      wrong = "{last_recognized}"
 
-  7. conversation: qualquer coisa que não se encaixe acima — perguntas, reclamações de comportamento, comentários.
+  7. learn_alias: quando o usuario pedir explicitamente para aprender que uma frase significa outra.
+     Deve ser um alias seguro: ele reescreve fala para outro comando, nao executa comando arbitrario.
+     Exemplos:
+       "aprende que abre meu vault dev significa abre obsidian" -> {"type":"learn_alias","alias":"abre meu vault dev","target":"abre obsidian"}
+       "quando eu disser testar lumina, quero dizer anota testar lumina" -> {"type":"learn_alias","alias":"testar lumina","target":"anota testar lumina"}
+
+  8. learn_preference: quando o usuario pedir para salvar uma preferencia de comportamento.
+     Exemplos:
+       "aprende que quando eu pedir print da direita voce deve analisar junto" -> {"type":"learn_preference","key":"screenshot_right_auto_analyze","value":true,"description":"Ao pedir print da tela direita, analisar junto."}
+
+  9. forget_alias: quando o usuario pedir para esquecer um alias.
+     Exemplo: "esquece o alias abre meu vault dev" -> {"type":"forget_alias","alias":"abre meu vault dev"}
+
+  10. list_learning: quando o usuario perguntar o que foi aprendido.
+      Exemplos: "o que voce aprendeu?", "lista seus aprendizados" -> {"type":"list_learning"}
+
+  11. conversation: qualquer coisa que nao se encaixe acima: perguntas, reclamacoes de comportamento, comentarios, opinioes.
 
   Texto recebido: "{command_text}"
 

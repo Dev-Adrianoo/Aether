@@ -100,7 +100,7 @@ def _execute(action_id: str, action: dict) -> Union[str, UnknownTarget]:
     if action_type == "exe_vault":
         from config import config
         vault_path = str(config.obsidian.dev_vault_path)
-        candidates = [Path(c) for c in action.get("candidates", [])]
+        candidates = config.obsidian.obsidian_exe_candidates
         for exe in candidates:
             if exe.exists():
                 subprocess.Popen([str(exe), vault_path])

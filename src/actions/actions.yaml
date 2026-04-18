@@ -5,13 +5,13 @@ actions:
     target: https://www.youtube.com
 
   spotify:
-    keywords: [spotify, música]
+    keywords: [spotify, musica, música]
     type: exe
     target: spotify
     fallback_url: https://open.spotify.com
 
   vscode:
-    keywords: [vscode, vs code, código]
+    keywords: [vscode, vs code, codigo, código]
     type: exe
     target: code
 
@@ -25,8 +25,4 @@ actions:
   obsidian:
     keywords: [obsidian]
     type: exe_vault
-    # abre com dev_vault_path como argumento — loader injeta via config
-    candidates:
-      - C:/Users/Adria/AppData/Local/Programs/Obsidian/Obsidian.exe
-      - C:/Users/Adria/AppData/Local/Obsidian/Obsidian.exe
-      - C:/Program Files/Obsidian/Obsidian.exe
+    # loader injeta dev_vault_path e OBSIDIAN_EXE_CANDIDATES via config

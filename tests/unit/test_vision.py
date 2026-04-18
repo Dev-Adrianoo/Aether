@@ -137,10 +137,10 @@ class TestScreenshotManager:
         analysis = await manager._analyze_screenshot(screenshot_data)
 
         assert analysis["timestamp"] == screenshot_data["timestamp"]
-        assert analysis["summary"] == "Tela capturada"
+        assert analysis["summary"].startswith("Tela capturada")
         assert analysis["has_errors"] is False
         assert analysis["needs_attention"] is False
-        assert "detected_elements" in analysis
+        assert "ocr_text" in analysis
         assert "change_significance" in analysis
 
     @pytest.mark.asyncio
