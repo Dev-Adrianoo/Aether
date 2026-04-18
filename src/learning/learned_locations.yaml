@@ -1,0 +1,4 @@
+# Futuro self-learning de locais/pastas.
+# Ainda nao usado pelo runtime.
+# Regra futura: aprender somente com confirmacao explicita e validar path antes de usar.
+locations: {}

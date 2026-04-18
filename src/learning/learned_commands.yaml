@@ -1,0 +1,5 @@
+# Futuro self-learning de comandos recorrentes.
+# Ainda nao usado pelo runtime.
+# Regra futura: permitir apenas comandos marcados como seguros e confirmados por voz.
+# Nao salvar comandos destrutivos ou amplos sem revisao manual.
+commands: {}
