@@ -182,7 +182,7 @@ class IntentRouter:
             await self._learning_handler.handle_list_learning()
 
         elif intent_type == "conversation":
-            # sempre passa pelo ask_question â€" classify nÃ£o tem system prompt nem vault
+            # sempre passa pelo ask_question â€" classify não tem system prompt nem vault
             await self._handle_conversation(
                 command_text, confidence,
                 model=model_for_intent("conversation")
