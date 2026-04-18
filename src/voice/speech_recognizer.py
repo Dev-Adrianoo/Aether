@@ -8,6 +8,7 @@ import logging
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,32 @@ class SpeechRecognizer:
         self._local_available = self._local_model is not None
 
     def _cuda_runtime_dlls_available(self) -> bool:
-        return bool(shutil.which("cublas64_12.dll") and shutil.which("cudnn64_9.dll"))
+        # Injeta o bin\ do CUDA no PATH da sessão e deixa o faster-whisper validar
+        cuda_root = None
+        cuda_path_env = os.environ.get("CUDA_PATH", "").strip()
+        if cuda_path_env:
+            p = Path(cuda_path_env)
+            if p.exists():
+                cuda_root = p
+
+        if cuda_root is None:
+            toolkit = Path("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA")
+            if toolkit.exists():
+                versions = sorted(toolkit.iterdir(), reverse=True)
+                cuda_root = versions[0] if versions else None
+
+        if cuda_root is None:
+            return False
+
+        bin_dir = cuda_root / "bin"
+        if not bin_dir.exists():
+            return False
+
+        bin_str = str(bin_dir)
+        if bin_str not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = bin_str + os.pathsep + os.environ.get("PATH", "")
+        print(f"[INFO] CUDA bin injetado no PATH: {bin_str}")
+        return True
 
     def _create_local_model(self, device: str, compute_type: str):
         try:
