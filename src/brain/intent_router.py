@@ -208,6 +208,11 @@ class IntentRouter:
             await self._handle_screenshot_command(command_text, confidence)
             return True
 
+        if pending["type"] == "describe_screenshot":
+            # Descreve o screenshot já capturado — vai pro LLM com contexto injetado
+            await self._handle_conversation(command_text, confidence)
+            return True
+
         if pending["type"] == "ui_action":
             await self._handle_ui_action(command_text, confidence)
             return True

@@ -23,6 +23,9 @@ class ConversationState:
         normalized = self.normalize_text(text)
         if "quer que eu tire um print" in normalized or "quer que eu capture" in normalized:
             self.pending_context = {"type": "screenshot"}
+        elif "pode me perguntar" in normalized or "pode perguntar" in normalized:
+            # Screenshot acabou de ser tirado — próxima fala descreve a tela
+            self.pending_context = {"type": "describe_screenshot"}
         elif "qual elemento devo clicar" in normalized:
             self.pending_context = {"type": "ui_action"}
 
@@ -54,6 +57,11 @@ class ConversationState:
             return {"type": "negative"}
 
         if pending["type"] == "screenshot" and self.is_affirmative_reply(text):
+            self.pending_context = None
+            return pending
+
+        if pending["type"] == "describe_screenshot":
+            # Qualquer fala não-negativa descreve a tela
             self.pending_context = None
             return pending
 
