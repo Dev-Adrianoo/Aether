@@ -85,7 +85,7 @@ class CommandProcessor:
             self._conv_last = current_time
             logger.info(f"[conv] {command_text}")
             await self._process_command(command_text)
-            return True
+            return wake_detected
 
         # Fora do modo conversa: exige wake word
         wake_detected, matched_word = self._detect_wake_word(text_lower)

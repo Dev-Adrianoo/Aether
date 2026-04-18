@@ -49,10 +49,12 @@ classification_prompt: |
 
   2. screenshot: pedido de capturar/fotografar/printar/foto da tela ou olhar/ver/analisar tela/monitor.
      Se pedir "tira print e me fala o que ve", ainda retorne screenshot; o handler respondera depois da captura.
+     Se o STT transcrever "vou tirar um print ... e me falar o que tem", interprete como screenshot quando houver pedido para a Lumina responder/analisar.
      Exemplos:
        "olha minha tela direita" -> {"type":"screenshot","monitor":2}
        "veja o que tem no monitor direito" -> {"type":"screenshot","monitor":2}
        "tira print da tela direita e me diz o que acha" -> {"type":"screenshot","monitor":2}
+       "vou tirar um print na minha tela direita agora e me falar o que tem nela" -> {"type":"screenshot","monitor":2}
 
   3. action: abrir app por nome: youtube, spotify, vscode, unity, obsidian.
      So use quando for ordem direta para a Lumina abrir. Nao use se o usuario disser que ele mesmo vai abrir.

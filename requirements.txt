@@ -4,6 +4,9 @@
 sounddevice>=0.4.6
 numpy>=1.24.0
 SpeechRecognition>=3.10.0
+# STT local preferencial. Em Windows+NVIDIA requer CUDA/cuDNN no PATH.
+# O modelo e baixado no primeiro uso para LUMINA_LOCAL_WHISPER_CACHE_DIR.
+faster-whisper>=1.1.0
 
 # TTS e playback
 edge-tts>=6.1.9

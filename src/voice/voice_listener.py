@@ -5,6 +5,7 @@ Dependency Injection, Single Responsibility, Open/Closed.
 
 import asyncio
 import logging
+import time
 from typing import Optional, Callable
 
 from .audio_capture import AudioCaptureFactory, AudioCapture
@@ -30,17 +31,23 @@ class VoiceListener:
         cfg = (config or {})
         _device = cfg.get('device_index', None)  # None usa dispositivo padrão do sistema
         _rate   = cfg.get('sample_rate', 44100)
+        _channels = cfg.get('channels', 1)
+        _energy_threshold = cfg.get('energy_threshold', 0)
+        _wake_cooldown = cfg.get('wake_cooldown', 0.4)
         self.audio_capture = audio_capture or AudioCaptureFactory.create_capture(
             method="sounddevice",
             device=_device,
             sample_rate=_rate,
+            channels=_channels,
+            energy_threshold=_energy_threshold,
         )
         self.speech_recognizer = speech_recognizer or SpeechRecognizer(language="pt-BR")
-        self.command_processor = command_processor or CommandProcessor(wake_word="lumina")
+        self.command_processor = command_processor or CommandProcessor(wake_word="lumina", cooldown=_wake_cooldown)
 
         # Estado
         self.running = False
         self.is_speaking = False  # mudo durante TTS para evitar loopback
+        self._muted_until = 0.0
         self.config = config or {}
 
         # Feedback
@@ -70,7 +77,7 @@ class VoiceListener:
 
     async def _process_audio_callback(self, audio_bytes: bytes):
         """Callback chamado quando áudio é capturado"""
-        if not self.running or self.is_speaking:
+        if not self.running or self.is_speaking or time.monotonic() < self._muted_until:
             return
 
         try:
@@ -109,6 +116,10 @@ class VoiceListener:
     def set_command_callback(self, callback: Callable):
         """Define callback para comandos"""
         self.command_processor.on_command_detected = callback
+
+    def mute_for(self, seconds: float):
+        """Ignora audio capturado durante/apos TTS para evitar eco como comando."""
+        self._muted_until = time.monotonic() + seconds
 
     async def stop(self):
         """Para o sistema de escuta"""

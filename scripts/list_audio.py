@@ -43,7 +43,7 @@ def main():
             # Verificar se parece ser Meta Quest
             name_lower = name.lower()
             if "quest" in name_lower or "meta" in name_lower or "vr" in name_lower or "oculus" in name_lower:
-                print(f"  ⚠️  POSSÍVEL META QUEST DETECTADO!")
+                print("  [AVISO] POSSIVEL META QUEST DETECTADO!")
                 possible_quest.append((idx, name))
             elif "usb audio" in name_lower:
                 usb_audio_devices.append((idx, name))
@@ -55,14 +55,14 @@ def main():
 
         # Análise dos dispositivos
         if possible_quest:
-            print(f"\n⚠️  Dispositivos Meta Quest/Oculus encontrados:")
+            print("\n[AVISO] Dispositivos Meta Quest/Oculus encontrados:")
             for idx, name in possible_quest:
                 print(f"  - Índice {idx}: {name}")
             print(f"\n  Para usar o microfone do headset, adicione ao .env:")
             print(f"    AUDIO_DEVICE_INDEX={possible_quest[0][0]}")
 
         if usb_audio_devices:
-            print(f"\n🔌 Dispositivos USB Audio (microfone de mesa):")
+            print("\nDispositivos USB Audio (microfone de mesa):")
             for idx, name in usb_audio_devices:
                 print(f"  - Índice {idx}: {name}")
             if not possible_quest:
@@ -74,11 +74,11 @@ def main():
         print("2. Adicione ou altere a linha:")
         print("   AUDIO_DEVICE_INDEX=<índice_do_dispositivo>")
         print("3. Reinicie o Lumina: python main.py")
-        print("\nExemplo para Meta Quest: AUDIO_DEVICE_INDEX=34")
-        print("Exemplo para microfone USB: AUDIO_DEVICE_INDEX=2")
+        print("\nExemplo para Meta Quest: use um dos indices listados acima.")
+        print("Exemplo para microfone USB: use um dos indices listados acima.")
         print("\nPara usar o dispositivo padrão do sistema, deixe a linha comentada ou removida.")
         print("\nDica: Teste rapidamente com:")
-        print("  AUDIO_DEVICE_INDEX=34 python main.py")
+        print("  AUDIO_DEVICE_INDEX=<indice> python main.py")
 
         return 0
 

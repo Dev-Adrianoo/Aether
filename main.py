@@ -58,6 +58,10 @@ class LuminaSensorySystem:
                 'print_feedback': True,
                 'device_index': config.audio.device_index,
                 'sample_rate': config.audio.sample_rate,
+                'channels': config.audio.channels,
+                'energy_threshold': config.audio.energy_threshold,
+                'post_tts_mute_seconds': config.audio.post_tts_mute_seconds,
+                'wake_cooldown': config.audio.wake_cooldown_seconds,
             })
             self.modules['speech'] = TTSEngine(use_edge_tts=config.tts.engine == 'edge-tts')
             self.modules['integration'] = OpenClaudeClient()
@@ -100,14 +104,20 @@ class LuminaSensorySystem:
     async def _speak(self, text: str):
         """Fala e muta o microfone durante a reprodução para evitar loopback."""
         hearing = self.modules.get('hearing')
+        post_tts_mute = 0.25
+        if hearing:
+            post_tts_mute = float(hearing.config.get('post_tts_mute_seconds', post_tts_mute))
         if hearing:
             hearing.is_speaking = True
+            if hasattr(hearing, 'mute_for'):
+                hearing.mute_for(3600)
         try:
             await self.modules['speech'].speak(text)
-            await asyncio.sleep(2.0)  # buffer para eco do speaker dissipar
         finally:
             if hearing:
                 hearing.is_speaking = False
+                if hasattr(hearing, 'mute_for'):
+                    hearing.mute_for(post_tts_mute)
 
     def _setup_callbacks(self):
         vision = self.modules['vision']
@@ -211,25 +221,27 @@ class LuminaSensorySystem:
         self.running = True
         print("Pronto. Diga 'Lumina' para ativar.\n")
 
+        interrupted = False
         try:
             await asyncio.gather(
                 self.modules['hearing'].start(),
             )
         except (KeyboardInterrupt, asyncio.CancelledError):
-            pass
+            interrupted = True
         except Exception as e:
             logger.error(f"Erro no loop principal: {e}")
         finally:
-            await self.shutdown()
+            await self.shutdown(save_summary=not interrupted)
 
-    async def shutdown(self):
+    async def shutdown(self, save_summary: bool = True):
         self.running = False
-        await self._save_session_summary()
         for module in self.modules.values():
             if hasattr(module, 'stop'):
                 await module.stop()
             elif hasattr(module, 'shutdown'):
                 await module.shutdown()
+        if save_summary:
+            await self._save_session_summary()
         print("\nLumina encerrada.")
 
     async def _save_session_summary(self):
@@ -247,6 +259,8 @@ class LuminaSensorySystem:
                     'timestamp': datetime.now().isoformat()
                 })
                 print("Sessão resumida e salva no vault.")
+        except (asyncio.CancelledError, KeyboardInterrupt, GeneratorExit):
+            return
         except Exception as e:
             logger.warning(f"Erro ao salvar resumo da sessão: {e}")
 
@@ -257,4 +271,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nLumina encerrada.")

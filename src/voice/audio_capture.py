@@ -35,11 +35,137 @@ class SoundDeviceCapture(AudioCapture):
         self.sample_rate = sample_rate
         self.channels = channels
         self.device = device
+        self.requested_device = device
         self.energy_threshold = energy_threshold  # 0 = auto-calibrar no início
         self.running = False
+        self._configure_input_device()
 
         if device is not None:
-            logger.info(f"SoundDevice usando dispositivo {device}")
+            logger.info(f"SoundDevice usando dispositivo {self.device}")
+
+    def _configure_input_device(self):
+        """Valida dispositivo/taxa e ajusta para uma combinacao suportada."""
+        try:
+            import sounddevice as sd
+        except ImportError:
+            return
+
+        try:
+            sd.check_input_settings(
+                device=self.device,
+                channels=self.channels,
+                samplerate=self.sample_rate,
+                dtype="int16",
+            )
+            return
+        except Exception as original_error:
+            logger.warning(
+                "Configuracao de audio invalida "
+                f"(device={self.device}, sample_rate={self.sample_rate}, channels={self.channels}): {original_error}"
+            )
+
+        if self.device is not None:
+            try:
+                info = sd.query_devices(self.device)
+                fallback_rate = int(float(info.get("default_samplerate", self.sample_rate)))
+                sd.check_input_settings(
+                    device=self.device,
+                    channels=self.channels,
+                    samplerate=fallback_rate,
+                    dtype="int16",
+                )
+                logger.warning(
+                    f"Dispositivo {self.device} nao aceita {self.sample_rate}Hz; usando {fallback_rate}Hz."
+                )
+                self.sample_rate = fallback_rate
+                return
+            except Exception as device_error:
+                logger.warning(
+                    f"Dispositivo de audio {self.device} indisponivel/incompativel ({device_error}); "
+                    "tentando selecao dinamica."
+                )
+
+        try:
+            sd.check_input_settings(
+                device=None,
+                channels=self.channels,
+                samplerate=self.sample_rate,
+                dtype="int16",
+            )
+            self.device = None
+        except Exception as default_error:
+            logger.warning(
+                f"Dispositivo padrao nao aceita {self.sample_rate}Hz ({default_error}); tentando taxa padrao."
+            )
+            try:
+                default_input = sd.default.device[0]
+                info = sd.query_devices(default_input)
+                fallback_rate = int(float(info.get("default_samplerate", self.sample_rate)))
+                sd.check_input_settings(
+                    device=None,
+                    channels=self.channels,
+                    samplerate=fallback_rate,
+                    dtype="int16",
+                )
+                self.device = None
+                self.sample_rate = fallback_rate
+            except Exception as final_error:
+                logger.error(f"Nenhuma configuracao de entrada de audio valida encontrada: {final_error}")
+
+    def _input_stream_candidates(self, sd):
+        """Gera candidatos de microfone para alternar entre Quest, USB e padrao."""
+        candidates = []
+
+        def add(device, sample_rate):
+            key = (device, int(sample_rate) if sample_rate else None)
+            if key not in candidates:
+                candidates.append(key)
+
+        if self.device is not None:
+            add(self.device, self.sample_rate)
+        elif self.requested_device is None:
+            add(None, self.sample_rate)
+
+        if self.device is not None:
+            try:
+                info = sd.query_devices(self.device)
+                add(self.device, info.get("default_samplerate", self.sample_rate))
+            except Exception:
+                pass
+
+        try:
+            devices = sd.query_devices()
+        except Exception:
+            devices = []
+
+        ranked = []
+        for idx, info in enumerate(devices):
+            try:
+                if info.get("max_input_channels", 0) <= 0:
+                    continue
+                name = str(info.get("name", "")).lower()
+                if any(token in name for token in ("usb audio", "quest", "oculus", "headset microphone")):
+                    rank = 0
+                else:
+                    rank = 1
+                ranked.append((rank, idx, info))
+            except AttributeError:
+                continue
+
+        for _, idx, info in sorted(ranked):
+            add(idx, info.get("default_samplerate", self.sample_rate))
+
+        add(None, self.sample_rate)
+
+        try:
+            default_input = sd.default.device[0]
+            if default_input is not None and default_input >= 0:
+                info = sd.query_devices(default_input)
+                add(default_input, info.get("default_samplerate", self.sample_rate))
+        except Exception:
+            pass
+
+        return candidates
 
     async def capture_audio(self, duration: float) -> Optional[bytes]:
         """Captura áudio usando sounddevice e converte para WAV"""
@@ -93,15 +219,30 @@ class SoundDeviceCapture(AudioCapture):
         def _cb(indata, frames, time_info, status):
             audio_q.put(indata.copy())
 
-        stream = sd.InputStream(
-            samplerate=self.sample_rate,
-            channels=self.channels,
-            dtype='int16',
-            device=self.device,
-            blocksize=chunk_samples,
-            callback=_cb,
-        )
-        return stream, audio_q
+        last_error = None
+        for device, sample_rate in self._input_stream_candidates(sd):
+            try:
+                sample_rate = int(float(sample_rate or self.sample_rate))
+                stream = sd.InputStream(
+                    samplerate=sample_rate,
+                    channels=self.channels,
+                    dtype='int16',
+                    device=device,
+                    blocksize=chunk_samples,
+                    callback=_cb,
+                )
+                if device != self.device or sample_rate != self.sample_rate:
+                    logger.warning(
+                        f"Audio input alternado para device={device}, sample_rate={sample_rate}."
+                    )
+                self.device = device
+                self.sample_rate = sample_rate
+                return stream, audio_q
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Falha ao abrir audio input device={device}, sample_rate={sample_rate}: {e}")
+
+        raise last_error or RuntimeError("Nenhum dispositivo de entrada de audio disponivel")
 
     async def calibrate(self, duration: float = 1.0) -> float:
         """

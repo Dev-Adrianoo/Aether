@@ -2,8 +2,8 @@
 Testes do SpeechRecognizer atual.
 
 Historicamente este arquivo testava fallback CMU Sphinx dentro do VoiceListener.
-A arquitetura mudou: VoiceListener delega STT para SpeechRecognizer, que usa Groq
-Whisper como primario e Google Speech como fallback.
+A arquitetura mudou: VoiceListener delega STT para SpeechRecognizer, que tenta
+faster-whisper local, Groq Whisper e Google Speech em ordem de fallback.
 """
 
 import sys
@@ -86,3 +86,14 @@ class TestSpeechRecognizerFallback:
         silence_pcm = b"\x00\x00" * 100
 
         assert SpeechRecognizer._audio_rms(wav_header + silence_pcm) == 0.0
+
+    def test_cuda_runtime_dll_check_requires_cublas_and_cudnn(self):
+        recognizer = SpeechRecognizer()
+
+        with patch("src.voice.speech_recognizer.shutil.which") as mock_which:
+            mock_which.side_effect = lambda name: f"C:/cuda/{name}" if name == "cublas64_12.dll" else None
+
+            assert recognizer._cuda_runtime_dlls_available() is False
+
+        with patch("src.voice.speech_recognizer.shutil.which", return_value="C:/cuda/dll"):
+            assert recognizer._cuda_runtime_dlls_available() is True

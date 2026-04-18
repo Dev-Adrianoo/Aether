@@ -60,6 +60,18 @@ class TestVisionHearingIntegration:
         handler.assert_awaited_once()
         assert "tira um print da tela" in handler.await_args.args[0]
 
+    @pytest.mark.asyncio
+    async def test_command_processor_conversation_turn_is_not_reported_as_wake_word(self):
+        processor = CommandProcessor(wake_word="lumina", cooldown=0)
+        handler = AsyncMock()
+        processor.register_command("llm_route", handler)
+
+        await processor.process_text("lumina")
+        detected = await processor.process_text("agora clique no botao")
+
+        assert detected is False
+        assert handler.await_count == 1
+
     def test_command_classification_integration(self):
         processor = CommandProcessor(wake_word="lumina")
 

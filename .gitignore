@@ -50,6 +50,8 @@ data/screenshots/
 data/audio_logs/
 data/command_logs/
 data/knowledge_db/
+data/models/
+data/run/*.ps1
 *.log
 iris.log
 
