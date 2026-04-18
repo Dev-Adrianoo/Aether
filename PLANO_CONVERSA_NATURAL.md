@@ -145,16 +145,55 @@ LUMINA_VAD_MIN_SPEECH_MS=300  # ignora frases menores que 300ms
 
 ---
 
-### Etapa 4 — Modo conversa fluido (sem wake word por N segundos)
+### Etapa 4 — Modo conversa fluido + controle de escuta
 
 **Arquivo:** `src/voice/command_processor.py`
+
+#### 4a — Sem wake word por N segundos (timeout automático)
 
 - Já existe `in_conversation` + `_conv_last`
 - Ampliar: depois de qualquer resposta da Lumina, entrar em modo conversa por 30s
 - Dentro desse modo, qualquer fala vai direto (sem precisar dizer "Lumina")
+- Se o usuário ficar 30s sem falar, volta a exigir wake word silenciosamente
 - Timeout configurável: `LUMINA_CONV_TIMEOUT_SECONDS=30`
 
-**Critério de conclusão:** 3 trocas seguidas sem dizer "Lumina"
+#### 4b — Comando explícito de pausa (controle manual)
+
+Quando o usuário não quer ser ouvido — reunião, ligação, conversa com outra pessoa — pode pausar e retomar por voz:
+
+- **Pausar:** "Lumina, para de ouvir" / "Lumina, fica quieta" / "Lumina, silêncio"
+  - Lumina responde "Ok, silenciando." e entra em modo surdo
+  - Nesse modo: microfone continua capturando, mas tudo é descartado
+  - Único comando processado é o de retorno
+
+- **Retomar:** "Lumina, volta" / "Lumina, pode ouvir" / "Lumina, tô aqui"
+  - Lumina responde "Voltei." e retoma modo normal
+
+**Implementação:**
+- Nova flag `self._muted: bool` no `CommandProcessor`
+- No início do `process()`, se `_muted` e o texto não é um comando de retorno → descarta
+- Frases de pausa/retorno detectadas antes do VAD normal (não precisam de wake word)
+- Persistir estado no processo (não entre reinicializações — se reiniciar, volta ao normal)
+
+**Config nova:**
+```
+LUMINA_MUTE_PHRASES=para de ouvir,fica quieta,silencio,cala a boca
+LUMINA_UNMUTE_PHRASES=volta,pode ouvir,to aqui,lumina
+```
+
+#### Combinação dos dois (comportamento final)
+
+```
+[Lumina responde] → entra em modo conversa (30s)
+      │
+      ├─ usuário fala dentro de 30s → responde, reseta timer
+      ├─ 30s de silêncio → volta a exigir wake word (silencioso, sem aviso)
+      └─ usuário fala "para de ouvir" → modo surdo
+                │
+                └─ usuário fala "volta" → retoma modo conversa
+```
+
+**Critério de conclusão:** 3 trocas sem dizer "Lumina" + "para de ouvir" silencia + "volta" retoma
 
 ---
 
@@ -197,3 +236,5 @@ sounddevice>=0.4.6   # já está no requirements — mas precisa ser usado no TT
 | Barge-in falso positivo (eco do speaker) | Threshold mais alto + só ativa após 500ms de TTS |
 | sounddevice incompatível com edge-tts chunks | Testar com buffer de 50ms antes de integrar |
 | STT parcial classifica errado | Só FastCommandRouter usa parcial; LLM sempre espera texto completo |
+| Modo surdo ativa por acidente | Frases de pausa são longas o suficiente para não ocorrer por acidente |
+| Usuário esquece que está no modo surdo | Lumina pode piscar um LED/ícone no systray no futuro; por ora, responde "Estou em silêncio" se ouvir "Lumina" |
