@@ -27,8 +27,9 @@ class FastCommandRouter:
         text = self.normalize_text(command_text)
         screen_terms = ["print", "screenshot", "tela", "monitor"]
         visual_verbs = [
-            "olha", "olhe", "veja", "ver", "analisa", "analise",
+            "olha", "olhe", "veja", "ve", "ver", "analisa", "analise",
             "captura", "capture", "tira", "tirar", "printa", "fotografa",
+            "mostra", "mostrar", "exibe", "exibir",
         ]
         answer_terms = [
             "me fala", "me falar", "me diga", "diz o que", "o que tem",

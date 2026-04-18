@@ -99,8 +99,11 @@ class CommandProcessor:
             self._conv_last = current_time
             logger.info(f"Wake word detectada: '{matched_word}'")
 
-            command_start = text_lower.find(matched_word) + len(matched_word)
-            command_text = text_lower[command_start:].strip()
+            wake_pos = text_lower.find(matched_word)
+            after = text_lower[wake_pos + len(matched_word):].strip()
+            before = text_lower[:wake_pos].strip().rstrip(",. ")
+            # "vê minha tela, lumina" → usa o que veio antes do wake word
+            command_text = after or before
 
             if command_text:
                 await self._process_command(command_text)
