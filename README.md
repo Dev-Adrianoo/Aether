@@ -1,130 +1,236 @@
-# Lumina
+# Lumina Agent
 
-Assistente de desenvolvimento sensorial que vê o que você vê, ouve o que você diz e age no mundo digital como extensão da sua vontade.
+Lumina is a voice-first development assistant that listens, speaks, reads the screen, routes intent, and can delegate heavier system/code tasks to OpenClaude. The current goal is not to be a generic chatbot, but a local "Jarvis-style" development companion that can stay in conversation mode while avoiding accidental command execution.
 
-## O que é a Lumina?
+## Current Status
 
-A Lumina é um assistente de desenvolvimento criado para superar as limitações humanas no desenvolvimento de software. Integra visão computacional, reconhecimento de fala e síntese de voz com OpenClaude para criar uma parceira de programação verdadeiramente contextual.
+Lumina is in an active prototype stage. The core architecture has been refactored into separate modules for configuration, voice, vision, intent routing, actions, integrations, and safe learning.
 
-Diferente de assistentes tradicionais presos a bolhas de texto, a Lumina vê sua tela, ouve seus comandos de voz e responde como uma parceira humana.
+Stable today:
 
-## Filosofia
+- Voice loop with wake word support.
+- Speech-to-text through Groq Whisper when configured, with Google Speech fallback.
+- Text-to-speech responses.
+- Screenshot capture and basic screen context handling.
+- DeepSeek/OpenAI-compatible LLM integration.
+- OpenClaude subprocess integration for heavier code/system work.
+- Centralized configuration through `config.py` and `.env`.
+- Dynamic intent loading through `src/intents/intents.yaml`.
+- Dynamic action registry through `src/actions/actions.yaml`.
+- Action Gate to reduce accidental execution while keeping conversation mode active.
+- Safe self-learning for aliases and preferences, with explicit confirmation.
 
-"Um assistente que não vê sua tela é cego. Um que não ouve sua voz é surdo. Um que não fala com você é mudo. A Lumina vê, ouve e fala — e portanto, age."
+Experimental or future:
 
-## Arquitetura
+- UI control through PyAutoGUI is present but should remain guarded.
+- `learned_locations.yaml` and `learned_commands.yaml` are placeholders only; the runtime does not use them yet.
+- Vision-language model routing is still a design topic, not a finished feature.
+- LuminaXR/Quest integration is a future server/client phase.
 
-### Sistema Sensorial
-- **Visão**: Análise de tela em tempo real com OpenCV e MSS
-- **Audição**: Wake word "Lumina" com SpeechRecognition e processamento de comandos
-- **Fala**: Respostas por voz naturais com edge-tts e pyttsx3
-- **Memória**: Vault Obsidian para memória permanente e aprendizado
-- **Ação**: Integração com OpenClaude para controle total do sistema
+## Architecture
 
-### Funcionalidades
-- Captura de screenshot inteligente (por trigger de voz ou intervalo)
-- Economia de contexto — só interrompe quando necessário
-- Aprendizado contínuo via documentação no Obsidian
-- Ação autônoma com direção humana
-- Roteamento LLM — qualquer fala natural é entendida e encaminhada
+```text
+lumina-agent/
+|-- config.py                  # Centralized environment/config loader
+|-- main.py                    # Runtime entry point
+|-- src/
+|   |-- actions/               # Dynamic actions and task storage
+|   |-- brain/                 # IntentRouter and Obsidian context
+|   |-- integrations/          # DeepSeek/OpenClaude clients
+|   |-- intents/               # Intent definitions loaded from YAML
+|   |-- learning/              # Safe alias/preference learning
+|   |-- vision/                # Screenshot capture
+|   `-- voice/                 # STT, TTS, wake word, command processing
+|-- tests/
+|   |-- integration/
+|   `-- unit/
+|-- scripts/                   # Utility scripts
+|-- data/                      # Generated local runtime data
+`-- docs/                      # Project documentation
+```
 
-## Início Rápido
+## Core Concepts
 
-### Pré-requisitos
+### Conversation Mode
+
+Lumina is intentionally allowed to listen beyond strict command phrases. This keeps the assistant useful as a conversational companion, but it creates a risk: noise, fragments, or casual speech can be misclassified as commands.
+
+The current mitigation is the Action Gate inside the intent routing layer. It blocks sensitive actions such as terminal execution, code-agent delegation, UI actions, and system actions unless the user phrase is direct enough.
+
+### Intent Routing
+
+Intent classification is handled by `src/brain/intent_router.py`. Intent definitions live in `src/intents/intents.yaml`, so new language-level intents can be adjusted without editing `main.py`.
+
+Current learning-related intents include:
+
+- `learn_alias`
+- `learn_preference`
+- `forget_alias`
+- `list_learning`
+
+Not implemented yet:
+
+- `learn_location`
+- `learn_command`
+- `forget_learning` as a generic umbrella command
+
+### Action Registry
+
+System actions are declared in `src/actions/actions.yaml` and loaded by `src/actions/action_loader.py`.
+
+Supported action types include:
+
+- `url`
+- `exe`
+- `exe_vault`
+- task/logging helpers
+
+Unknown or incomplete executable targets should not be guessed silently. The intended flow is confirmation first, then an assisted lookup/update.
+
+### Safe Self-Learning
+
+The active self-learning layer is intentionally narrow.
+
+Implemented:
+
+- Exact normalized voice aliases.
+- Simple preferences.
+- Explicit confirmation before writing.
+- Alias rewriting before LLM intent classification.
+
+Files:
+
+- `src/learning/learning_manager.py`
+- `src/learning/learned_aliases.yaml`
+- `src/learning/learned_preferences.yaml`
+
+Placeholders for future design:
+
+- `src/learning/learned_locations.yaml`
+- `src/learning/learned_commands.yaml`
+
+Those placeholder files exist to document direction, not to enable command execution.
+
+## Requirements
+
 - Python 3.9+
-- Windows/Linux/macOS
-- Microfone e alto-falantes
-- OpenClaude rodando localmente
+- Windows is the primary development target.
+- Microphone and speakers/headset.
+- OpenClaude installed locally if you want code-agent delegation.
+- Tesseract OCR installed if OCR features are used.
 
-### Instalação
+Install dependencies:
 
-```bash
-git clone https://github.com/Dev-Adrianoo/lumina-agent.git
-cd lumina-agent
-
+```powershell
 python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # Linux/Mac
-
+.\venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Uso
+For tests:
 
-```bash
-# Iniciar a Lumina
-python main.py
-
-# Testar instalação
-python tests/run_simple_tests.py
-
-# Suite completa de testes (requer pytest)
-python -m pytest tests/ -v
+```powershell
+pip install -r requirements_dev.txt
 ```
 
-## Como Funciona
+## Configuration
 
-### Módulo de Visão
-Captura screenshots com base em:
-- Gatilhos de voz: "tela", "print", "screenshot", "foto"
-- Intervalo de tempo: a cada 60 segundos para monitoramento contínuo
-- Detecção de erros: quando erros visuais são detectados
+Copy `.env.example` to `.env` and fill the values you need.
 
-### Módulo de Audição
-Aguarda a wake word "Lumina" e processa comandos naturais:
-- "Lumina, tira um print"
-- "Lumina, mostra a tela"
-- "Lumina, captura isso"
+Important variables:
 
-### Integração
-- Screenshots e contexto enviados ao LLM para análise
-- Comandos executados pelo OpenClaude
-- Todas as interações registradas no Obsidian para aprendizado contínuo
-
-## Estrutura do Projeto
-
-```
-lumina-agent/
-├── src/
-│   ├── vision/         # Captura e análise de tela
-│   ├── voice/          # Reconhecimento de fala e TTS
-│   ├── integrations/   # Comunicação com LLM
-│   ├── actions/        # Ações no sistema
-│   └── brain/          # Sistema de memória Obsidian
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── manual/
-├── scripts/            # Scripts utilitários
-├── config.py           # Configuração central
-├── main.py             # Ponto de entrada
-└── data/               # Dados gerados (excluído do git)
-```
-
-## Desenvolvimento
-
-### Testes
-```bash
-python tests/run_simple_tests.py
-python -m pytest tests/ -v
-```
-
-### Variáveis de Ambiente (`.env`)
-```
+```dotenv
+LUMINA_USER_NAME=Adriano
 LUMINA_WAKE_WORD=lumina
-OPENCLAUDE_API_KEY=sua_chave
-OBSIDIAN_VAULT_PATH=C:/caminho/para/vault
+
+GROQ_API_KEY=
+
+OPENCLAUDE_API_KEY=
+OPENCLAUDE_BASE_URL=https://api.deepseek.com/v1
+OPENCLAUDE_MODEL=deepseek-chat
+OPENCLAUDE_BIN=
+OPENCLAUDE_SENTINEL_TIMEOUT=300
+
+OBSIDIAN_VAULT_PATH=
+OBSIDIAN_DEV_VAULT=
+
 TTS_ENGINE=edge-tts
+TTS_VOICE=pt-br
 ```
 
-## Documentação
+Do not hardcode user-specific paths in Python modules. Put local paths in `.env` and read them through `config.py`.
 
-Documentação do projeto no vault Obsidian em `Documentation/Dev-lumina-agent`.
+## Running Lumina
 
-## Licença
+```powershell
+python .\main.py
+```
 
-Projeto privado — todos os direitos reservados.
+Typical voice examples:
 
----
+```text
+Lumina, take a screenshot.
+Lumina, what do you see on my right monitor?
+Lumina, open YouTube.
+Lumina, remember that "open my dev vault" means "open Obsidian".
+Lumina, list what you learned.
+```
 
-*A Lumina vê o que você vê, ouve o que você diz e age como extensão da sua vontade no mundo digital.*
+## Tests
+
+Run the default suite:
+
+```powershell
+python -m pytest -q
+```
+
+Current validated result:
+
+```text
+64 passed
+```
+
+Compile check used during recent refactors:
+
+```powershell
+python -m py_compile main.py src\brain\intent_router.py src\intents\intent_loader.py
+```
+
+## Obsidian Vault
+
+The project uses an Obsidian vault as a working memory and planning layer. The active project map is expected under the development vault configured by `.env`.
+
+Important notes:
+
+- The vault is documentation and context, not a replacement for tests.
+- Recent sessions can be injected as context to improve continuity.
+- If the project map grows too large or Lumina starts ignoring vault context, semantic memory integration should be investigated before adding more raw text.
+
+## Safety Rules
+
+- Conversation should not automatically become execution.
+- Any learned behavior that can affect the system must require explicit confirmation.
+- Learned aliases may rewrite text, but execution still goes through the normal IntentRouter and Action Gate.
+- Future learned commands must use allowlists or manual review before becoming executable.
+- OpenClaude subprocess execution should have a timeout and visible status handling.
+
+## Roadmap
+
+Short term:
+
+- Improve conversation mode without losing continuous listening.
+- Continue tightening Action Gate behavior.
+- Expand tests around intent routing, screenshots, and voice edge cases.
+- Improve OpenClaude status visibility and sentinel handling.
+
+Later:
+
+- Safe `learn_location`.
+- Safe `learn_command`.
+- Better visual understanding pipeline.
+- Guarded UI control through PyAutoGUI.
+- LuminaXR client/server integration for Meta Quest.
+
+## License
+
+Private project. All rights reserved.
