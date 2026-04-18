@@ -28,6 +28,9 @@ class OpenClaudeSubprocess:
     def is_available(self) -> bool:
         return self._bin_path.exists()
 
+    def is_terminal_open(self) -> bool:
+        return bool(self._terminal_proc and self._terminal_proc.poll() is None)
+
     async def ask(
         self,
         prompt: str,
@@ -108,10 +111,13 @@ class OpenClaudeSubprocess:
         Singleton: fecha terminal anterior e abre um novo com o prompt.
         Escreve sentinel quando o node termina.
         """
-        cwd = working_dir or str(Path.home() / "Documents")
+        from config import config
+
+        default_cwd = str(config.openclaude.working_dir)
+        cwd = working_dir or default_cwd
         cwd_path = Path(cwd)
         if not cwd_path.exists() or not cwd_path.is_dir():
-            cwd = str(Path.home() / "Documents")
+            cwd = default_cwd
 
         run_dir = Path(__file__).parent.parent.parent / "data" / "run"
         run_dir.mkdir(parents=True, exist_ok=True)

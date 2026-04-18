@@ -39,6 +39,41 @@ def make_router(base_path: Path, classify_response: str = '{"type":"conversation
 
 
 @pytest.mark.asyncio
+async def test_pending_screenshot_confirmation_routes_without_llm(workspace_tmp: Path):
+    router, speak, integration = make_router(workspace_tmp)
+    router._handle_screenshot_command = AsyncMock()
+
+    await router._speak("Não consigo ver a tela. Quer que eu tire um print?")
+    await router.route("yes, i accept", 0.8)
+
+    router._handle_screenshot_command.assert_awaited_once()
+    integration.classify.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_long_sentence_does_not_count_as_pending_confirmation(workspace_tmp: Path):
+    router, _, integration = make_router(workspace_tmp)
+    router._handle_screenshot_command = AsyncMock()
+
+    await router._speak("Não consigo ver a tela. Quer que eu tire um print?")
+    await router.route("sim mas antes me explica o que aconteceu", 0.8)
+
+    router._handle_screenshot_command.assert_not_awaited()
+    integration.classify.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_screenshot_request_with_stt_first_person_misread_routes_directly(workspace_tmp: Path):
+    router, _, integration = make_router(workspace_tmp, '{"type":"conversation"}')
+    router._handle_screenshot_command = AsyncMock()
+
+    await router.route("vou tirar um print na minha tela direita agora e me falar o que tem nela", 0.8)
+
+    router._handle_screenshot_command.assert_awaited_once_with("direita", 0.8)
+    integration.classify.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_learn_alias_requires_confirmation(workspace_tmp: Path):
     router, speak, _ = make_router(
         workspace_tmp,
@@ -47,8 +82,7 @@ async def test_learn_alias_requires_confirmation(workspace_tmp: Path):
 
     await router.route("aprende que abre meu vault dev significa abre obsidian", 0.8)
 
-    assert router._pending_learning is not None
-    assert router._pending_learning.kind == "alias"
+    assert router._learning_handler.has_pending
     assert "Quer que eu aprenda" in speak.await_args.args[0]
 
 

@@ -18,6 +18,8 @@ class AudioConfig:
     energy_threshold: int
     pause_threshold: float
     device_index: Optional[int]  # None = usar padrão do SO
+    post_tts_mute_seconds: float
+    wake_cooldown_seconds: float
 
 @dataclass
 class OpenClaudeConfig:
@@ -26,11 +28,21 @@ class OpenClaudeConfig:
     base_url: str
     model: str
     bin_path: Path  # path do executável openclaude CLI
+    working_dir: Path
 
 @dataclass
 class GroqConfig:
     """Configurações da API Groq (STT Whisper)"""
     api_key: str
+
+@dataclass
+class STTConfig:
+    """Configuracoes de reconhecimento de fala"""
+    backend: str
+    local_model: str
+    local_device: str
+    local_compute_type: str
+    local_cache_dir: Path
 
 @dataclass
 class ObsidianConfig:
@@ -75,6 +87,7 @@ class LuminaConfig:
         self.audio = self._load_audio_config()
         self.openclaude = self._load_openclaude_config()
         self.groq = self._load_groq_config()
+        self.stt = self._load_stt_config()
         self.obsidian = self._load_obsidian_config()
         self.tts = self._load_tts_config()
         self.vision = self._load_vision_config()
@@ -124,6 +137,7 @@ class LuminaConfig:
 
     def _load_audio_config(self) -> AudioConfig:
         device_raw = os.getenv('AUDIO_DEVICE_INDEX')
+        device_index = int(device_raw) if device_raw and device_raw.strip() else None
         return AudioConfig(
             wake_word=self._get_env('LUMINA_WAKE_WORD', 'lumina'),
             sample_rate=self._get_env_int('AUDIO_SAMPLE_RATE', 16000),
@@ -131,7 +145,9 @@ class LuminaConfig:
             phrase_time_limit=self._get_env_int('LUMINA_PHRASE_TIME_LIMIT', 15),
             energy_threshold=self._get_env_int('LUMINA_ENERGY_THRESHOLD', 4000),
             pause_threshold=0.8,
-            device_index=int(device_raw) if device_raw is not None else None
+            device_index=device_index,
+            post_tts_mute_seconds=float(self._get_env('LUMINA_POST_TTS_MUTE_SECONDS', '0.25')),
+            wake_cooldown_seconds=float(self._get_env('LUMINA_WAKE_COOLDOWN_SECONDS', '0.4')),
         )
 
     def _load_openclaude_config(self) -> OpenClaudeConfig:
@@ -140,12 +156,22 @@ class LuminaConfig:
             api_key=self._get_env('OPENCLAUDE_API_KEY', ''),
             base_url=self._get_env('OPENCLAUDE_BASE_URL', 'https://api.deepseek.com/v1'),
             model=self._get_env('OPENCLAUDE_MODEL', 'deepseek-chat'),
-            bin_path=Path(self._get_env('OPENCLAUDE_BIN', str(default_bin)))
+            bin_path=Path(self._get_env('OPENCLAUDE_BIN', str(default_bin))),
+            working_dir=Path(self._get_env('OPENCLAUDE_WORKING_DIR', str(Path.home() / 'Documents')))
         )
 
     def _load_groq_config(self) -> GroqConfig:
         return GroqConfig(
             api_key=self._get_env('GROQ_API_KEY', '')
+        )
+
+    def _load_stt_config(self) -> STTConfig:
+        return STTConfig(
+            backend=self._get_env('LUMINA_STT_BACKEND', 'auto').lower(),
+            local_model=self._get_env('LUMINA_LOCAL_WHISPER_MODEL', 'turbo'),
+            local_device=self._get_env('LUMINA_LOCAL_WHISPER_DEVICE', 'cuda'),
+            local_compute_type=self._get_env('LUMINA_LOCAL_WHISPER_COMPUTE_TYPE', 'float16'),
+            local_cache_dir=Path(self._get_env('LUMINA_LOCAL_WHISPER_CACHE_DIR', './data/models/huggingface')),
         )
 
     def _load_obsidian_config(self) -> ObsidianConfig:
